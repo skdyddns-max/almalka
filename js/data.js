@@ -108,6 +108,7 @@ function emptyState() {
   return {
     profile: { name: '', unit: 'kg', nick: '', region: '', age: '', gender: '' },
     customExercises: [],   // 사용자가 추가한 운동 [{id, part, type, name}]
+    favoriteExercises: [], // 즐겨찾기 운동 id
     routines: [],          // [{id, name, exIds:[...]}]
     sessions: [],          // [{id, date, start, end, secs, entries:[{exId,name,part,type,sets:[{w,r,done,t}]}], note}]
     body: [],              // [{id, date, weight, chest, waist, arm, thigh, note}] (미사용)
@@ -151,6 +152,20 @@ function saveState(s) {
 function allExercises() { return [...BUILTIN_EXERCISES, ...state.customExercises]; }
 function findExercise(id) { return allExercises().find(e => e.id === id) || null; }
 function exercisesByPart(part) { return allExercises().filter(e => e.part === part); }
+function favoriteExerciseIds() { return state.favoriteExercises || (state.favoriteExercises = []); }
+function isFavoriteExercise(id) { return favoriteExerciseIds().includes(id); }
+function toggleFavoriteExercise(id) {
+  state.favoriteExercises = isFavoriteExercise(id) ? favoriteExerciseIds().filter(x => x !== id) : [...favoriteExerciseIds(), id];
+  saveState(); return isFavoriteExercise(id);
+}
+function recentExerciseIds(limit = 20) {
+  const out = [];
+  for (let i = state.sessions.length - 1; i >= 0 && out.length < limit; i--) {
+    const entries = state.sessions[i].entries || [];
+    for (let j = entries.length - 1; j >= 0 && out.length < limit; j--) if (!out.includes(entries[j].exId)) out.push(entries[j].exId);
+  }
+  return out;
+}
 
 /* 유틸 */
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }

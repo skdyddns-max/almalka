@@ -72,7 +72,7 @@ function renderHome() {
       <button id="btn-1rm" class="tool-btn">🧮 1RM 계산기</button>
     </div>
     ${rt.length ? `<h3 class="sec-title">루틴으로 시작</h3><div class="routine-quick">${
-      rt.map(r => `<button class="rq-btn" data-rt="${r.id}"><b>${esc(r.name)}</b><span>${r.exIds.length}개 운동</span></button>`).join('')
+      rt.map(r => `<button class="rq-btn" data-rt="${r.id}"><b>${esc(r.name)}</b><span>${routineItems(r).length}개 운동</span></button>`).join('')
     }</div>` : `<p class="hint">자주 하는 운동을 <b>루틴</b>으로 묶으면 여기서 한 번에 시작할 수 있어요.</p>`}
     ${recent ? `<h3 class="sec-title">최근 운동</h3>${sessionCard(recent)}` : ''}
   `;
@@ -109,12 +109,13 @@ function entryCard(e, i) {
   const last = getLastSets(e.exId);
   const rows = e.sets.map((s, j) => {
     const prev = last && last[j] ? setLabel(e.type, last[j]) : '–';
+    const effort = s.rpe ? `RPE ${s.rpe} · RIR ${Math.max(0, 10 - s.rpe)}` : 'RPE 기록';
     const st = SET_TYPES[s.t || 'normal'];
     const flash = flashSet && flashSet.i === i && flashSet.j === j ? ' flash' : '';
     return `
       <div class="set-row ${s.done ? 'done' : ''} ${s.t ? 't-' + s.t : ''}${flash}" data-i="${i}" data-j="${j}">
         <button class="set-no" data-act="settype" style="${s.t ? `color:${st.color}` : ''}" title="탭하면 워밍업/드롭/실패로 바뀌어요">${st.tag || (j + 1)}</button>
-        <span class="set-prev" title="지난 기록">${prev}</span>
+        <span class="set-prev" title="지난 기록"><span>${prev}</span><button data-act="effort" class="effort-btn">${effort}</button></span>
         ${setInputs(e.type, s, i, j)}
         <button class="set-check" data-act="check" aria-label="${s.done ? '완료됨' : '완료 체크'}">${s.done ? '✓' : ''}</button>
       </div>`;
@@ -122,14 +123,17 @@ function entryCard(e, i) {
   const total = e.sets.length;
   const doneN = e.sets.filter(s => s.done).length;
   const allDone = total > 0 && doneN === total;
+  const suggestion = progressionSuggestion(e);
   return `
     <div class="entry ${allDone ? 'done' : ''}" data-i="${i}">
       <div class="entry-top" style="--pc:${p.color}">
         <span class="part-dot">${p.emoji}</span>
         <b class="entry-name" data-act="exhist" title="지난 기록 보기">${esc(e.name)}</b>
+        <button class="entry-fav ${isFavoriteExercise(e.exId) ? 'on' : ''}" data-act="fav" aria-label="${isFavoriteExercise(e.exId) ? '즐겨찾기 해제' : '즐겨찾기'}">★</button>
         <span class="entry-prog ${allDone ? 'done' : ''}">${allDone ? '✓ 완료' : `${doneN}/${total}`}</span>
         <button class="ex-del" data-act="delex" aria-label="운동 삭제">✕</button>
       </div>
+      ${suggestion ? `<div class="progression-tip"><span>✨ ${suggestion.text}</span><button data-act="applysuggest" data-weight="${suggestion.weight}">적용</button></div>` : ''}
       <div class="set-head">
         <span>세트</span><span>이전</span>${setHeadCols(e.type)}<span></span>
       </div>
@@ -189,8 +193,11 @@ function bindActive(el) {
     if (act === 'addset') { const i = +b.closest('.entry').dataset.i; addSet(i); return; }
     if (act === 'rmset')  { const i = +b.closest('.entry').dataset.i; rmSet(i); return; }
     if (act === 'exhist') { const i = +b.closest('.entry').dataset.i; openExHistory(active.entries[i].exId); return; }
+    if (act === 'fav') { const i = +b.closest('.entry').dataset.i; const on = toggleFavoriteExercise(active.entries[i].exId); toast(on ? '즐겨찾기에 추가했어요 ⭐' : '즐겨찾기에서 뺐어요'); renderHome(); return; }
     if (act === 'settype') { const row = b.closest('.set-row'); cycleSetType(+row.dataset.i, +row.dataset.j); return; }
+    if (act === 'effort') { const row = b.closest('.set-row'); cycleEffort(+row.dataset.i, +row.dataset.j); return; }
     if (act === 'check')  { const row = b.closest('.set-row'); toggleDone(+row.dataset.i, +row.dataset.j); return; }
+    if (act === 'applysuggest') { const i = +b.closest('.entry').dataset.i; applyProgression(i, +b.dataset.weight); return; }
     const i = +b.dataset.i, j = +b.dataset.j;
     if (act === 'w+') stepSet(i, j, 'w', +2.5);
     if (act === 'w-') stepSet(i, j, 'w', -2.5);
@@ -229,19 +236,19 @@ function startSession(routineId) {
   active = { startTs: Date.now(), date: todayStr(), entries: [], note: '' };
   if (routineId) {
     const r = state.routines.find(x => x.id === routineId);
-    if (r) r.exIds.forEach(id => { const ex = findExercise(id); if (ex) active.entries.push(newEntry(ex)); });
+    if (r) routineItems(r).forEach(item => { const ex = findExercise(item.exId); if (ex) active.entries.push(newEntry(ex, item)); });
   }
   saveActive(); switchTab('home');
 }
-function newEntry(ex) {
+function newEntry(ex, target = {}) {
   const last = getLastSets(ex.id);
-  const n = last ? last.length : 3;
+  const n = target.sets || (last ? last.length : 3);
   const sets = [];
   for (let k = 0; k < n; k++) {
     const l = last && last[k];
-    sets.push({ w: l ? l.w : '', r: l ? l.r : '', done: false });
+    sets.push({ w: l ? l.w : '', r: l ? l.r : (target.reps || ''), rpe: l ? l.rpe : '', done: false });
   }
-  return { exId: ex.id, name: ex.name, part: ex.part, type: ex.type, sets };
+  return { exId: ex.id, name: ex.name, part: ex.part, type: ex.type, targetReps: target.reps || '', restSec: target.rest || '', sets };
 }
 function addExercise(exId) {
   const ex = findExercise(exId); if (!ex) return;
@@ -251,7 +258,7 @@ function addExercise(exId) {
 function delEntry(i) { active.entries.splice(i, 1); saveActive(); renderHome(); }
 function addSet(i) {
   const e = active.entries[i], last = e.sets[e.sets.length - 1] || {};
-  e.sets.push({ w: last.w || '', r: last.r || '', done: false });
+  e.sets.push({ w: last.w || '', r: last.r || e.targetReps || '', rpe: last.rpe || '', done: false });
   saveActive(); renderHome();
 }
 function rmSet(i) { active.entries[i].sets.pop(); saveActive(); renderHome(); }
@@ -269,6 +276,16 @@ function cycleSetType(i, j) {
   if (next === 'normal') delete s.t; else s.t = next;
   saveActive(); renderHome(); refreshLiveStat();
 }
+function cycleEffort(i, j) {
+  const s = active.entries[i].sets[j];
+  s.rpe = !s.rpe ? 6 : (s.rpe >= 10 ? '' : s.rpe + 1);
+  saveActive(); renderHome();
+}
+function applyProgression(i, weight) {
+  const e = active.entries[i];
+  e.sets.forEach(s => { if (s.t !== 'warmup') s.w = weight; });
+  saveActive(); renderHome(); toast(`${weight}${unit()}로 채웠어요`);
+}
 let shownPRs = new Set();
 let flashSet = null;
 function toggleDone(i, j) {
@@ -277,7 +294,7 @@ function toggleDone(i, j) {
   if (s.done) { flashSet = { i, j }; try { navigator.vibrate && navigator.vibrate(18); } catch {} }
   saveActive(); renderHome();
   if (s.done) {
-    startRest(state.settings.restDefault);
+    startRest(e.restSec || state.settings.restDefault);
     // 개인기록(PR) 감지 — 워밍업 제외, 운동당 세션 1회만
     if (e.type === 'wr' && s.t !== 'warmup' && !shownPRs.has(e.exId)) {
       const pr = checkNewPR(e.exId, +s.w, +s.r);
@@ -341,9 +358,22 @@ function discardSession() {
 function getLastSets(exId) {
   for (let i = state.sessions.length - 1; i >= 0; i--) {
     const e = state.sessions[i].entries.find(x => x.exId === exId);
-    if (e) return e.sets.map(s => ({ w: s.w, r: s.r }));
+    if (e) return e.sets.map(s => ({ w: s.w, r: s.r, rpe: s.rpe, t: s.t }));
   }
   return null;
+}
+function progressionSuggestion(entry) {
+  if (entry.type !== 'wr') return null;
+  const last = getLastSets(entry.exId); if (!last?.length) return null;
+  const work = last.filter(s => s.t !== 'warmup' && (+s.w || 0) > 0 && (+s.r || 0) > 0); if (!work.length) return null;
+  const maxW = Math.max(...work.map(s => +s.w || 0));
+  const target = +entry.targetReps || 10;
+  const success = work.every(s => (+s.r || 0) >= target);
+  const avgRpe = work.filter(s => +s.rpe).reduce((n, s, _, a) => n + (+s.rpe || 0) / a.length, 0);
+  let weight = maxW, text = `지난 ${maxW}${unit()} 유지 추천`;
+  if (success && (!avgRpe || avgRpe <= 8.5)) { weight = Math.round((maxW + 2.5) * 10) / 10; text = `목표 달성 · ${weight}${unit()} 증량 추천`; }
+  else if (avgRpe >= 9.5) { weight = Math.max(0, Math.round(maxW * .95 * 2) / 2); text = `강도가 높았어요 · ${weight}${unit()} 조절 추천`; }
+  return { weight, text };
 }
 
 /* 운동별 상세 히스토리 + 최고기록 모달 */
@@ -422,26 +452,31 @@ function openPicker() {
   m.querySelector('#pk-body').innerHTML = `
     <div class="pk-summary"><b>${allExercises().length}개 운동</b><span>부위와 기구로 빠르게 찾아보세요</span></div>
     <input id="pk-search" placeholder="운동 이름·부위·기구 검색…" autocomplete="off">
+    <div class="pk-scopes"><button class="pk-scope on" data-scope="all">전체</button><button class="pk-scope" data-scope="favorite">⭐ 즐겨찾기</button><button class="pk-scope" data-scope="recent">🕘 최근 운동</button></div>
     <span class="pk-filter-label">부위</span>
     <div class="pk-parts">${parts}</div>
     <span class="pk-filter-label">기구·방식</span>
     <div class="pk-equipments">${equipments}</div>
     <div id="pk-list"></div>`;
-  let curPart = 'all', curEquipment = 'all', query = '';
+  let curPart = 'all', curEquipment = 'all', scope = 'all', query = '';
   const renderList = () => {
     const q = query.toLowerCase().replace(/\s/g, '');
     const list = allExercises().filter(e => {
       const equipment = exerciseEquipment(e), p = PART_MAP[e.part];
       const haystack = `${e.name}${p?.name || ''}${EQUIPMENT_MAP[equipment]?.name || ''}`.toLowerCase().replace(/\s/g, '');
-      return (curPart === 'all' || e.part === curPart) && (curEquipment === 'all' || equipment === curEquipment) && (!q || haystack.includes(q));
+      const scopeOk = scope === 'all' || (scope === 'favorite' ? isFavoriteExercise(e.id) : recentExerciseIds().includes(e.id));
+      return scopeOk && (curPart === 'all' || e.part === curPart) && (curEquipment === 'all' || equipment === curEquipment) && (!q || haystack.includes(q));
     });
     document.querySelector('#pk-list').innerHTML = `<p class="pk-count">검색 결과 <b>${list.length}개</b></p>` + list.map(e => {
       const p = PART_MAP[e.part];
       const eq = EQUIPMENT_MAP[exerciseEquipment(e)] || EQUIPMENT_MAP.etc;
-      return `<button class="pk-item" data-id="${e.id}"><span class="pk-emoji">${p.emoji}</span><span>${esc(e.name)}<small class="pk-meta">${p.name} · ${eq.name}</small></span></button>`;
+      return `<button class="pk-item" data-id="${e.id}"><span class="pk-emoji">${p.emoji}</span><span>${isFavoriteExercise(e.id) ? '⭐ ' : ''}${esc(e.name)}<small class="pk-meta">${p.name} · ${eq.name}</small></span></button>`;
     }).join('') + (!list.length ? '<p class="pk-empty">조건에 맞는 기본 운동이 없어요.<br>직접 만들어 추가할 수 있어요.</p>' : '') + `<button class="pk-item pk-new" data-new="1">＋ ${query ? `“${esc(query)}” ` : ''}새 운동 만들기</button>`;
   };
   renderList();
+  m.querySelectorAll('.pk-scope').forEach(b => b.addEventListener('click', () => {
+    scope = b.dataset.scope; m.querySelectorAll('.pk-scope').forEach(x => x.classList.toggle('on', x === b)); renderList();
+  }));
   m.querySelectorAll('.pk-part').forEach(b => b.addEventListener('click', () => {
     curPart = b.dataset.part;
     m.querySelectorAll('.pk-part').forEach(x => x.classList.toggle('on', x === b));
@@ -500,7 +535,7 @@ function renderRoutines() {
   el.querySelectorAll('[data-rt-start]').forEach(b => b.addEventListener('click', () => startSession(b.dataset.rtStart)));
 }
 function routineCard(r) {
-  const names = r.exIds.map(id => (findExercise(id) || {}).name).filter(Boolean);
+  const names = routineItems(r).map(item => (findExercise(item.exId) || {}).name).filter(Boolean);
   return `<div class="rt-card">
     <div class="rt-info"><b>${esc(r.name)}</b><small>${names.slice(0, 4).join(' · ')}${names.length > 4 ? ` 외 ${names.length - 4}` : ''}</small></div>
     <div class="rt-btns">
@@ -508,31 +543,43 @@ function routineCard(r) {
       <button class="pill-btn" data-rt-start="${r.id}">시작</button>
     </div></div>`;
 }
+function routineItems(r) {
+  if (r.items?.length) return r.items.map(x => ({ exId: x.exId, sets: +x.sets || 3, reps: +x.reps || '', rest: +x.rest || '' }));
+  return (r.exIds || []).map(exId => ({ exId, sets: 3, reps: '', rest: '' }));
+}
 function openRoutineEdit(rtId) {
   const r = rtId ? state.routines.find(x => x.id === rtId) : { id: uid(), name: '', exIds: [] };
-  const draft = { id: r.id, name: r.name, exIds: [...r.exIds] };
+  const draft = { id: r.id, name: r.name, items: routineItems(r) };
   const m = document.querySelector('#routine-edit');
   const render = () => {
-    const chosen = draft.exIds.map(id => {
-      const e = findExercise(id); if (!e) return '';
-      return `<span class="chip" data-rm="${id}">${esc(e.name)} ✕</span>`;
+    const chosen = draft.items.map(item => {
+      const e = findExercise(item.exId); if (!e) return '';
+      return `<div class="routine-target" data-target-id="${item.exId}"><div><b>${esc(e.name)}</b><button type="button" data-rm="${item.exId}" aria-label="${esc(e.name)} 삭제">✕</button></div>
+        <label>세트<input data-target="sets" type="number" inputmode="numeric" min="1" max="12" value="${item.sets || 3}"></label>
+        <label>목표 횟수<input data-target="reps" type="number" inputmode="numeric" min="1" max="100" value="${item.reps || ''}" placeholder="선택"></label>
+        <label>휴식(초)<input data-target="rest" type="number" inputmode="numeric" min="10" max="600" value="${item.rest || ''}" placeholder="기본"></label></div>`;
     }).join('');
     m.querySelector('#re-body').innerHTML = `
       <label>루틴 이름<input id="re-name" value="${esc(draft.name)}" placeholder="예: 가슴+삼두" maxlength="24"></label>
-      <div class="chips">${chosen || '<small class="hint">아래에서 운동을 추가하세요.</small>'}</div>
+      <div class="routine-targets">${chosen || '<small class="hint">아래에서 운동을 추가하세요.</small>'}</div>
       <button id="re-add" class="pill-btn ghost">＋ 운동 추가</button>
       <div class="re-actions">
         ${rtId ? '<button id="re-del" class="text-btn danger">루틴 삭제</button>' : '<span></span>'}
         <button id="re-save" class="big-btn small">저장</button>
       </div>`;
     m.querySelector('#re-name').addEventListener('input', e => draft.name = e.target.value);
+    m.querySelectorAll('[data-target-id]').forEach(row => row.addEventListener('input', e => {
+      const field = e.target.dataset.target; if (!field) return;
+      const item = draft.items.find(x => x.exId === row.dataset.targetId); if (item) item[field] = parseInt(e.target.value) || '';
+    }));
     m.querySelectorAll('[data-rm]').forEach(c => c.addEventListener('click', () => {
-      draft.exIds = draft.exIds.filter(x => x !== c.dataset.rm); render();
+      draft.items = draft.items.filter(x => x.exId !== c.dataset.rm); render();
     }));
     m.querySelector('#re-add').addEventListener('click', () => pickForRoutine(draft, render));
     m.querySelector('#re-save').addEventListener('click', () => {
       draft.name = (draft.name || '').trim() || '내 루틴';
-      if (!draft.exIds.length) { alert('운동을 하나 이상 추가해주세요.'); return; }
+      if (!draft.items.length) { alert('운동을 하나 이상 추가해주세요.'); return; }
+      draft.exIds = draft.items.map(x => x.exId); // 구버전 호환
       const ex = state.routines.find(x => x.id === draft.id);
       if (ex) Object.assign(ex, draft); else state.routines.push(draft);
       saveState(); closeModal('#routine-edit'); renderRoutines();
@@ -561,10 +608,18 @@ function pickForRoutine(draft, back) {
       const haystack = `${e.name}${p?.name || ''}${EQUIPMENT_MAP[equipment]?.name || ''}`.toLowerCase().replace(/\s/g, '');
       return (cur === 'all' || e.part === cur) && (curEquipment === 'all' || equipment === curEquipment) && (!q || haystack.includes(q));
     });
-    document.querySelector('#pk-list').innerHTML = `<p class="pk-count">검색 결과 <b>${list.length}개</b> · 선택 ${draft.exIds.length}개</p>` + list.map(e => {
+    const box = document.querySelector('#pk-list');
+    box.innerHTML = `<p class="pk-count">검색 결과 <b>${list.length}개</b> · 선택 ${draft.items.length}개</p>` + list.map(e => {
       const eq = EQUIPMENT_MAP[exerciseEquipment(e)] || EQUIPMENT_MAP.etc;
-      return `<button class="pk-item ${draft.exIds.includes(e.id) ? 'chosen' : ''}" data-id="${e.id}"><span>${draft.exIds.includes(e.id) ? '✓ ' : ''}${esc(e.name)}<small class="pk-meta">${PART_MAP[e.part].name} · ${eq.name}</small></span></button>`;
+      const chosen = draft.items.some(x => x.exId === e.id);
+      return `<button class="pk-item ${chosen ? 'chosen' : ''}" data-id="${e.id}"><span>${chosen ? '✓ ' : ''}${esc(e.name)}<small class="pk-meta">${PART_MAP[e.part].name} · ${eq.name}</small></span></button>`;
     }).join('') + (!list.length ? '<p class="pk-empty">조건에 맞는 운동이 없어요.</p>' : '');
+    box.querySelectorAll('.pk-item').forEach(it => it.addEventListener('click', () => {
+      const id = it.dataset.id;
+      if (draft.items.some(x => x.exId === id)) draft.items = draft.items.filter(x => x.exId !== id);
+      else draft.items.push({ exId: id, sets: 3, reps: '', rest: '' });
+      renderList();
+    }));
   };
   renderList();
   m.querySelectorAll('.pk-part').forEach(b => b.addEventListener('click', () => {
@@ -574,13 +629,6 @@ function pickForRoutine(draft, back) {
     curEquipment = b.dataset.equipment; m.querySelectorAll('.pk-equipment').forEach(x => x.classList.toggle('on', x === b)); renderList();
   }));
   m.querySelector('#pk-search').addEventListener('input', e => { query = e.target.value.trim(); renderList(); });
-  m.querySelector('#pk-list').addEventListener('click', e => {
-    const it = e.target.closest('.pk-item'); if (!it) return;
-    const id = it.dataset.id;
-    if (draft.exIds.includes(id)) draft.exIds = draft.exIds.filter(x => x !== id);
-    else draft.exIds.push(id);
-    renderList();
-  });
   const done = document.createElement('button');
   done.className = 'big-btn small'; done.textContent = '완료'; done.style.marginTop = '12px';
   done.addEventListener('click', () => { closeModal('#picker'); back(); });
