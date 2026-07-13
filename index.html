@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+  <title>정훈이와 찬양하라 — 운동 인증 습관</title>
+  <meta name="description" content="운동방 친구들과 매일 운동·식단을 인증하는 습관 챌린지 (AI 자세·칼로리)">
+  <meta name="theme-color" content="#14171E">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="정훈이와 찬양하라">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main id="app">
+    <section class="tab-panel" data-tab="home"><div id="panel-home"></div></section>
+    <section class="tab-panel" data-tab="diet" hidden><div id="panel-diet"></div></section>
+    <section class="tab-panel" data-tab="routines" hidden><div id="panel-routines"></div></section>
+    <section class="tab-panel" data-tab="history" hidden><div id="panel-history"></div></section>
+    <section class="tab-panel" data-tab="stats" hidden><div id="panel-stats"></div></section>
+    <section class="tab-panel" data-tab="challenge" hidden><div id="panel-challenge"></div></section>
+    <section class="tab-panel" data-tab="settings" hidden><div id="panel-settings"></div></section>
+  </main>
+
+  <nav id="tabbar">
+    <button class="nav-btn on" data-tab="home"><span>🏋️</span>오늘</button>
+    <button class="nav-btn" data-tab="diet"><span>🍱</span>식단</button>
+    <button class="nav-btn" data-tab="routines"><span>📋</span>루틴</button>
+    <button class="nav-btn" data-tab="stats"><span>📈</span>통계</button>
+    <button class="nav-btn" data-tab="challenge"><span>🏅</span>챌린지</button>
+    <button class="nav-btn" data-tab="settings"><span>⚙️</span>설정</button>
+  </nav>
+
+  <!-- 개인기록(PR) 축하 팝업 -->
+  <div id="pr-pop"></div>
+
+  <!-- 첫 사용 온보딩 -->
+  <div id="welcome" class="modal-back" hidden>
+    <div class="modal welcome-modal">
+      <div id="wc-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- 사용법 · 도움말 -->
+  <div id="help" class="modal-back" hidden>
+    <div class="modal">
+      <div class="modal-head"><h3>📖 사용법</h3><button data-close="#help" class="x">✕</button></div>
+      <div id="help-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- 휴식 타이머 -->
+  <div id="rest-overlay" hidden>
+    <div class="rest-card">
+      <p class="rest-label">휴식</p>
+      <div class="rest-ring-wrap">
+        <svg viewBox="0 0 120 120" class="rest-ring">
+          <circle class="rr-bg" cx="60" cy="60" r="54"/>
+          <circle id="rest-ring-fg" class="rr-fg" cx="60" cy="60" r="54"/>
+        </svg>
+        <p id="rest-time" class="rest-time">1:30</p>
+      </div>
+      <div class="rest-btns">
+        <button id="rest-minus">－15초</button>
+        <button id="rest-skip" class="rest-skip">건너뛰기</button>
+        <button id="rest-plus">＋15초</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 운동 완료 요약 -->
+  <div id="finish-summary" class="modal-back" hidden>
+    <div class="modal">
+      <div id="fs-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- 운동 선택 모달 -->
+  <div id="picker" class="modal-back" hidden>
+    <div class="modal sheet">
+      <div class="modal-head"><h3>운동 선택</h3><button data-close="#picker" class="x">✕</button></div>
+      <div id="pk-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- 새 운동 만들기 -->
+  <div id="newex" class="modal-back" hidden>
+    <div class="modal">
+      <div class="modal-head"><h3>새 운동</h3><button data-close="#newex" class="x">✕</button></div>
+      <div id="nx-body" class="modal-body form"></div>
+    </div>
+  </div>
+
+  <!-- 루틴 편집 -->
+  <div id="routine-edit" class="modal-back" hidden>
+    <div class="modal">
+      <div class="modal-head"><h3>루틴 편집</h3><button data-close="#routine-edit" class="x">✕</button></div>
+      <div id="re-body" class="modal-body form"></div>
+    </div>
+  </div>
+
+  <!-- 운동별 히스토리 -->
+  <div id="exhist" class="modal-back" hidden>
+    <div class="modal">
+      <div class="modal-head"><h3></h3><button data-close="#exhist" class="x">✕</button></div>
+      <div id="eh-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- 프로필(챌린지) -->
+  <div id="profile" class="modal-back" hidden>
+    <div class="modal">
+      <div class="modal-head"><h3>내 프로필</h3><button data-close="#profile" class="x">✕</button></div>
+      <div id="pf-body" class="modal-body form"></div>
+    </div>
+  </div>
+
+  <!-- 빠른 인증 (요일 탭 → 시간 입력) -->
+  <div id="quickday" class="modal-back" hidden>
+    <div class="modal">
+      <div class="modal-head"><h3></h3><button data-close="#quickday" class="x">✕</button></div>
+      <div id="qd-body" class="modal-body form"></div>
+    </div>
+  </div>
+
+  <!-- 사진 갤러리 (모두의 인증 사진) -->
+  <div id="photoview" hidden>
+    <button class="pv-close" data-close="#photoview">✕</button>
+    <button class="pv-nav prev" aria-label="이전">‹</button>
+    <img alt="인증 사진">
+    <button class="pv-nav next" aria-label="다음">›</button>
+    <p class="pv-cap"></p>
+    <div class="pv-strip"></div>
+  </div>
+
+  <!-- 식단: 음식 추가/편집 -->
+  <div id="meal-edit" class="modal-back" hidden>
+    <div class="modal">
+      <div class="modal-head"><h3>음식 추가</h3><button data-close="#meal-edit" class="x">✕</button></div>
+      <div id="me-body" class="modal-body form"></div>
+    </div>
+  </div>
+
+  <!-- AI 자세 체크 -->
+  <div id="ai-form" class="modal-back" hidden>
+    <div class="modal">
+      <div class="modal-head"><h3>🤖 AI 자세 체크</h3><button data-close="#ai-form" class="x">✕</button></div>
+      <div id="af-body" class="modal-body form"></div>
+    </div>
+  </div>
+
+  <!-- 1RM 계산기 -->
+  <div id="orm-calc" class="modal-back" hidden>
+    <div class="modal">
+      <div class="modal-head"><h3>🧮 1RM 계산기</h3><button data-close="#orm-calc" class="x">✕</button></div>
+      <div id="orm-body" class="modal-body form"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/sync.js"></script>
+</body>
+</html>
