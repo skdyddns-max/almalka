@@ -1,8 +1,9 @@
 /* 알려줄까말까 서비스워커 — 오프라인 캐시 (앱 셸 cache-first + 백그라운드 갱신) */
-const VERSION = 'almalka-v3';
+const VERSION = 'almalka-v4';
 const SHELL = [
   './',
   './index.html',
+  './guide.html',
   './css/style.css',
   './js/config.js',
   './js/data.js',

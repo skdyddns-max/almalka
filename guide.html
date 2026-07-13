@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>정훈이와 찬양하라 — 사용설명서</title>
+<meta name="description" content="정훈이와 찬양하라 앱을 처음 쓰는 분을 위한 자세한 사용설명서">
+<meta name="theme-color" content="#14171E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14171E; --bg2:#1A1E27; --card:#212632; --card2:#2A303E;
+    --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.15);
+    --text:#F4F6FA; --muted:#9AA3B2; --faint:#6B7385;
+    --accent:#FF7A59; --accent-d:#FF6242; --accent-soft:rgba(255,122,89,.15);
+    --mint:#5BE0B0; --mint-ink:#06291F; --blue:#6BA8FF; --gold:#F6B21A;
+    --grad:linear-gradient(135deg,#FF7A59,#FF9E6B);
+    --r:14px; --r-lg:18px; --r-xl:24px;
+    --disp:'Do Hyeon','Pretendard Variable',Pretendard,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;
+    color:var(--text);background:var(--bg);line-height:1.6;
+    background-image:radial-gradient(130% 55% at 50% -5%,rgba(255,122,89,.10),rgba(255,122,89,0) 60%);
+    background-attachment:fixed;-webkit-font-smoothing:antialiased;
+    padding-bottom:60px}
+  .wrap{max-width:620px;margin:0 auto;padding:0 18px}
+  h1,h2,h3{font-family:var(--disp);font-weight:400;letter-spacing:-.01em;line-height:1.2;margin:0}
+  a{color:var(--accent)}
+  .emoji{font-style:normal}
+
+  /* 상단 바 */
+  .topbar{position:sticky;top:0;z-index:20;background:rgba(20,23,30,.82);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);padding:12px 0}
+  .topbar .wrap{display:flex;align-items:center;gap:10px}
+  .tb-logo{width:34px;height:34px;flex:0 0 34px}
+  .tb-title{font-family:var(--disp);font-size:17px}
+  .tb-title small{display:block;font-family:Pretendard,sans-serif;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.02em}
+  .tb-open{margin-left:auto;background:var(--grad);color:#fff;font-weight:800;font-size:13px;
+    padding:9px 14px;border-radius:99px;text-decoration:none;box-shadow:0 6px 18px rgba(255,98,66,.35)}
+
+  /* 히어로 */
+  .hero{padding:34px 0 18px;text-align:center}
+  .hero h1{font-size:30px;margin-bottom:8px}
+  .hero .lead{color:var(--muted);font-size:15px;max-width:440px;margin:0 auto}
+  .hero .kick{display:inline-block;background:var(--accent-soft);color:var(--accent);font-weight:800;
+    font-size:12px;padding:6px 12px;border-radius:99px;margin-bottom:14px}
+
+  /* 퀵 네비 */
+  .qnav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:12px 0 6px}
+  .qnav a{background:var(--card);border:1px solid var(--line2);color:var(--text);text-decoration:none;
+    font-size:13px;font-weight:700;padding:8px 13px;border-radius:99px}
+  .qnav a:active{background:var(--card2)}
+
+  /* 섹션 */
+  section{padding:26px 0 8px;scroll-margin-top:70px}
+  .sec-head{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+  .sec-ic{width:44px;height:44px;flex:0 0 44px;border-radius:13px;background:var(--accent-soft);
+    display:grid;place-items:center;font-size:23px}
+  .sec-head h2{font-size:21px}
+  .sec-head p{margin:2px 0 0;color:var(--muted);font-size:13px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
+    padding:16px 17px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .card h3{font-size:16px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .card p{margin:6px 0;font-size:14.5px;color:#E4E8EF}
+
+  /* 단계 리스트 */
+  ol.steps{list-style:none;counter-reset:s;margin:8px 0 4px;padding:0}
+  ol.steps li{counter-increment:s;position:relative;padding:8px 0 8px 40px;font-size:14.5px;border-top:1px solid var(--line)}
+  ol.steps li:first-child{border-top:none}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:8px;width:26px;height:26px;
+    background:var(--grad);color:#fff;font-family:var(--disp);font-size:14px;border-radius:50%;
+    display:grid;place-items:center;box-shadow:0 3px 8px rgba(255,98,66,.3)}
+  ol.steps li b{color:#fff}
+  ul.plain{margin:6px 0;padding-left:20px}
+  ul.plain li{font-size:14.5px;margin:5px 0;color:#E4E8EF}
+
+  /* 콜아웃 */
+  .tip,.warn,.note{border-radius:12px;padding:11px 14px;margin:12px 0;font-size:13.5px;line-height:1.5}
+  .tip{background:rgba(91,224,176,.10);border-left:3px solid var(--mint)}
+  .warn{background:rgba(255,84,80,.10);border-left:3px solid #FF5470}
+  .note{background:rgba(107,168,255,.10);border-left:3px solid var(--blue)}
+  .tip b,.warn b,.note b{color:#fff}
+
+  .pill{display:inline-block;background:var(--card2);border:1px solid var(--line2);border-radius:8px;
+    padding:1px 8px;font-size:13px;font-weight:700;color:#fff;white-space:nowrap}
+  .tab-chip{display:inline-flex;align-items:center;gap:5px;background:var(--card2);border-radius:8px;
+    padding:3px 9px;font-size:13px;font-weight:800;margin:2px 0}
+
+  /* 탭 요약 그리드 */
+  .tabgrid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:8px}
+  .tabrow{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);
+    border-radius:var(--r);padding:13px 14px}
+  .tabrow .ic{font-size:22px;flex:0 0 30px;text-align:center}
+  .tabrow b{font-size:15px}
+  .tabrow span{display:block;color:var(--muted);font-size:13px;margin-top:2px}
+
+  /* FAQ */
+  details{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    margin:9px 0;overflow:hidden}
+  details[open]{border-color:var(--line2)}
+  summary{cursor:pointer;padding:14px 16px;font-weight:700;font-size:14.5px;list-style:none;
+    display:flex;justify-content:space-between;align-items:center;gap:10px}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:'＋';color:var(--accent);font-size:18px;font-weight:800;transition:.2s}
+  details[open] summary::after{content:'－'}
+  details .a{padding:0 16px 15px;font-size:14px;color:#DDE2EA}
+  details .a p{margin:4px 0}
+
+  .divider{height:1px;background:var(--line);margin:30px 0}
+  footer{text-align:center;color:var(--faint);font-size:12.5px;padding:26px 0 10px}
+  footer .logo{width:40px;height:40px;margin:0 auto 8px}
+  .backtop{display:block;text-align:center;color:var(--muted);font-size:13px;font-weight:700;
+    text-decoration:none;margin:18px 0;padding:10px;border:1px solid var(--line);border-radius:99px}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+  <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF6242"/><stop offset="1" stop-color="#FF9E6B"/></linearGradient>
+</defs></svg>
+
+<div class="topbar"><div class="wrap">
+  <svg class="tb-logo" viewBox="0 0 100 100" aria-hidden="true"><g fill="url(#lg)">
+    <rect x="30" y="45" width="40" height="10" rx="5"/><rect x="14" y="32" width="12" height="36" rx="4"/>
+    <rect x="26" y="38" width="7" height="24" rx="3"/><rect x="74" y="32" width="12" height="36" rx="4"/>
+    <rect x="67" y="38" width="7" height="24" rx="3"/></g></svg>
+  <div class="tb-title">정훈이와 찬양하라<small>사용설명서</small></div>
+  <a class="tb-open" href="https://skdyddns-max.github.io/almalka/">앱 열기</a>
+</div></div>
+
+<div class="wrap">
+
+  <div class="hero">
+    <span class="kick">💪 운동방 전용 인증 앱</span>
+    <h1>처음이어도 5분이면 끝!</h1>
+    <p class="lead">매일 운동·식단을 기록하고, 운동방 친구들과 순위를 겨루고, AI가 자세와 칼로리까지 봐주는 앱이에요. 아래 순서대로만 따라 하세요.</p>
+  </div>
+
+  <nav class="qnav">
+    <a href="#install">① 설치</a>
+    <a href="#start">② 시작</a>
+    <a href="#tabs">화면 6개</a>
+    <a href="#today">운동 기록</a>
+    <a href="#diet">식단</a>
+    <a href="#stats">통계·1RM</a>
+    <a href="#challenge">그룹 챌린지</a>
+    <a href="#ai">AI 사용법</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+
+  <!-- 1. 설치 -->
+  <section id="install">
+    <div class="sec-head"><div class="sec-ic">📲</div><div>
+      <h2>① 앱 설치하기 (한 번만)</h2><p>홈 화면에 아이콘을 만들면 진짜 앱처럼 써요</p></div></div>
+
+    <div class="card">
+      <h3>🍎 아이폰 (Safari)</h3>
+      <ol class="steps">
+        <li><b>Safari</b>로 <span class="pill">skdyddns-max.github.io/almalka</span> 접속</li>
+        <li>아래 가운데 <b>공유 버튼</b>(⬆️ 네모+화살표) 탭</li>
+        <li>메뉴에서 <b>"홈 화면에 추가"</b> 선택 → <b>추가</b></li>
+        <li>홈 화면에 생긴 💪 아이콘으로 실행!</li>
+      </ol>
+      <div class="note">크롬 말고 <b>Safari</b>로 열어야 "홈 화면에 추가"가 나와요.</div>
+    </div>
+
+    <div class="card">
+      <h3>🤖 안드로이드 (Chrome)</h3>
+      <ol class="steps">
+        <li><b>Chrome</b>으로 <span class="pill">skdyddns-max.github.io/almalka</span> 접속</li>
+        <li>오른쪽 위 <b>⋮ 메뉴</b> 탭</li>
+        <li><b>"앱 설치"</b> 또는 <b>"홈 화면에 추가"</b> 선택</li>
+        <li>홈 화면 아이콘으로 실행!</li>
+      </ol>
+      <div class="tip">설치하면 <b>인터넷이 없어도</b> 내 운동 기록은 열려요. (그룹·AI·사진만 인터넷 필요)</div>
+    </div>
+  </section>
+
+  <!-- 2. 시작 -->
+  <section id="start">
+    <div class="sec-head"><div class="sec-ic">🚀</div><div>
+      <h2>② 3분 만에 시작하기</h2><p>딱 이 3가지만 하면 준비 끝</p></div></div>
+
+    <div class="card">
+      <ol class="steps">
+        <li><b>닉네임 정하기</b> — 아래 <span class="tab-chip">⚙️ 설정</span> → <b>내 프로필</b> → 닉네임 입력(운동방에서 보일 이름). 지역·성별은 선택.</li>
+        <li><b>첫 운동 기록</b> — <span class="tab-chip">🏋️ 오늘</span> → <b>＋ 운동 시작하기</b> (자세한 건 아래 <a href="#today">운동 기록</a>)</li>
+        <li><b>첫 인증</b> — <span class="tab-chip">🏅 챌린지</span> → 오늘 요일 칸을 눌러 운동 시간 톡! (자세한 건 <a href="#challenge">그룹 챌린지</a>)</li>
+      </ol>
+      <div class="tip">기록은 <b>내 폰에 자동 저장</b>돼요. 회원가입·로그인 없이 바로 씁니다.</div>
+    </div>
+  </section>
+
+  <!-- 화면 6개 -->
+  <section id="tabs">
+    <div class="sec-head"><div class="sec-ic">🧭</div><div>
+      <h2>화면(탭) 6개 한눈에</h2><p>맨 아래 메뉴로 이동해요</p></div></div>
+    <div class="tabgrid">
+      <div class="tabrow"><span class="ic">🏋️</span><div><b>오늘</b><span>운동을 고르고 세트·무게·횟수를 기록. 세트 끝나면 휴식 타이머가 자동으로 돌아요.</span></div></div>
+      <div class="tabrow"><span class="ic">🍱</span><div><b>식단</b><span>먹은 음식을 끼니별로 기록. 사진 찍으면 AI가 칼로리를 추정해줘요.</span></div></div>
+      <div class="tabrow"><span class="ic">📋</span><div><b>루틴</b><span>자주 하는 운동을 하나로 묶어두면 다음부터 한 번에 시작.</span></div></div>
+      <div class="tabrow"><span class="ic">📈</span><div><b>통계</b><span>볼륨·잔디·개인기록(PR)·성장 그래프 + 1RM 계산기 + 피로도/디로딩 신호.</span></div></div>
+      <div class="tabrow"><span class="ic">🏅</span><div><b>챌린지</b><span>운동방 친구들과 코드로 묶여 매일 인증하고 순위(리더보드)를 겨뤄요.</span></div></div>
+      <div class="tabrow"><span class="ic">⚙️</span><div><b>설정</b><span>프로필·주간 목표·휴식 시간·단위, 기기 간 동기화, 백업.</span></div></div>
+    </div>
+  </section>
+
+  <!-- 운동 기록 -->
+  <section id="today">
+    <div class="sec-head"><div class="sec-ic">🏋️</div><div>
+      <h2>운동 기록하기 (오늘 탭)</h2><p>세트·무게·횟수를 탭탭탭으로</p></div></div>
+
+    <div class="card">
+      <h3>운동 시작 → 기록</h3>
+      <ol class="steps">
+        <li><b>＋ 운동 시작하기</b> 누르기</li>
+        <li>운동 선택 창에서 부위별로 운동을 고르기. 없으면 <b>새 운동 만들기</b>로 직접 추가</li>
+        <li>운동이 추가되면 <b>세트별로 무게·횟수 입력</b> — <span class="pill">＋ / －</span> 버튼으로 빠르게 조절(무게 ±2.5, 횟수 ±1)</li>
+        <li>세트를 마치면 <b>체크(완료)</b> 탭 → <b>휴식 타이머</b>가 자동으로 시작</li>
+        <li>운동이 끝나면 위쪽 <b>완료</b> 버튼 → 요약 확인</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h3>알아두면 좋은 것</h3>
+      <ul class="plain">
+        <li><b>세트 종류</b>: 세트 번호를 탭하면 일반 → <span class="pill">W 워밍업</span> → <span class="pill">D 드롭</span> → <span class="pill">F 실패</span> 순서로 바뀌어요. 워밍업은 볼륨·기록에서 제외돼요.</li>
+        <li><b>지난 기록 자동 표시</b>: 같은 운동을 하면 지난번 무게·횟수가 옆에 보여서 참고하기 좋아요.</li>
+        <li><b>개인기록(PR) 🏆</b>: 역대 최고 무게나 1RM을 넘기면 축하 배너가 떠요.</li>
+        <li><b>휴식 타이머</b>: <span class="pill">－15초</span> <span class="pill">건너뛰기</span> <span class="pill">＋15초</span>로 조절. 기본 시간은 설정에서 바꿔요.</li>
+      </ul>
+    </div>
+    <div class="tip">그냥 <b>운동한 시간만</b> 남기고 싶다면? 세트 기록 없이 <span class="tab-chip">🏅 챌린지</span>에서 요일 칸에 시간만 톡 쳐도 인증돼요.</div>
+  </section>
+
+  <!-- 식단 -->
+  <section id="diet">
+    <div class="sec-head"><div class="sec-ic">🍱</div><div>
+      <h2>식단 기록하기 (식단 탭)</h2><p>먹은 것 + 칼로리·탄단지</p></div></div>
+
+    <div class="card">
+      <h3>음식 추가하는 2가지 방법</h3>
+      <ol class="steps">
+        <li><b>직접 추가</b> — 끼니(아침·점심·저녁·간식) 아래 <span class="pill">＋ 직접 추가</span> → 음식 이름·칼로리·탄단지 입력</li>
+        <li><b>📷 사진으로 칼로리 (AI)</b> — <span class="pill">📷 사진으로 칼로리</span> → 음식 사진 촬영 → <b>AI가 이름·칼로리·영양을 자동으로 채워줘요</b>(값은 눈으로 확인·수정 가능)</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>목표와 요약</h3>
+      <ul class="plain">
+        <li>맨 위 <b>칼로리 링</b>과 <b>탄수·단백·지방 막대</b>로 오늘 먹은 양을 한눈에 봐요.</li>
+        <li>오른쪽 위 <span class="pill">🎯 목표</span>에서 하루 목표 칼로리·영양을 정해요.</li>
+        <li><b>‹ ›</b>로 지난 날짜의 식단도 보고 기록할 수 있어요.</li>
+      </ul>
+      <div class="note">근육 키우려면 보통 <b>몸무게 1kg당 단백질 1.6~2.2g</b>을 권장해요. (예: 70kg → 112~154g)</div>
+    </div>
+  </section>
+
+  <!-- 통계 -->
+  <section id="stats">
+    <div class="sec-head"><div class="sec-ic">📈</div><div>
+      <h2>통계 · 1RM · 디로딩 (통계 탭)</h2><p>내 성장과 몸 상태 보기</p></div></div>
+
+    <div class="card">
+      <h3>🧮 1RM 계산기</h3>
+      <p>통계 탭 위쪽 <span class="pill">🧮 1RM</span>(또는 오늘 탭 버튼) → <b>무게 + 반복 횟수</b> 입력하면 <b>추정 1RM</b>과 함께 <b>%별 목표 무게 표</b>(예: 80% = 몇 kg × 8회)가 나와요. 무게 세팅할 때 딱이에요.</p>
+    </div>
+    <div class="card">
+      <h3>🔴 피로도 · 디로딩 신호</h3>
+      <p>통계 탭 위쪽 카드에서 <b>오늘 컨디션</b>을 1~5로 눌러두면, 연속 훈련 주수·볼륨 변화·피로도를 종합해 신호를 줘요:</p>
+      <ul class="plain">
+        <li>🟢 <b>양호</b> — 지금 페이스 유지, 조금씩 늘려도 OK</li>
+        <li>🟡 <b>주의</b> — 피로 쌓이는 중, 한 주 지켜보기</li>
+        <li>🔴 <b>디로딩 추천</b> — 이번 주는 볼륨 40~50% 줄이고 휴식·영양 늘리기</li>
+      </ul>
+      <div class="tip"><b>디로딩</b>이란? 일부러 강도를 낮춰 쉬어가는 주간. 과훈련·부상을 막고 더 강하게 복귀하는 검증된 방법이에요.</div>
+    </div>
+    <div class="card">
+      <h3>그 외 통계</h3>
+      <ul class="plain">
+        <li><b>운동 잔디</b> — 최근 1년 운동한 날을 색으로 표시</li>
+        <li><b>근육 히트맵</b> — 이번 주 어느 부위를 많이 자극했는지</li>
+        <li><b>개인기록(PR)</b>과 <b>운동별 성장 그래프</b>(추정 1RM 추이)</li>
+        <li>위쪽 <span class="pill">📅 기록</span>으로 날짜별 달력·인증 사진도 볼 수 있어요.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 챌린지 -->
+  <section id="challenge">
+    <div class="sec-head"><div class="sec-ic">🏅</div><div>
+      <h2>그룹 챌린지 (챌린지 탭)</h2><p>운동방 친구들과 순위 겨루기</p></div></div>
+
+    <div class="card">
+      <h3>매일 인증하기</h3>
+      <ol class="steps">
+        <li>먼저 <b>닉네임</b> 설정(안 했다면 안내가 떠요)</li>
+        <li>요일 칸 중 <b>오늘 날짜 칸을 탭</b></li>
+        <li><b>오늘 운동 시간</b> 입력(30분·1시간 버튼 또는 직접) — 원하면 <b>📷 사진</b>도 첨부</li>
+        <li><b>인증하기</b> → 출석부·순위에 바로 반영!</li>
+      </ol>
+      <div class="tip"><b>사진</b>을 올리면 <b>순위 +1점</b> 🔥 꾸준함이 순위로 보여요.</div>
+    </div>
+
+    <div class="card">
+      <h3>👑 운동방을 만드는 사람 (방장)</h3>
+      <ol class="steps">
+        <li>챌린지 탭 아래 <b>＋ 챌린지 만들기</b></li>
+        <li>생기는 <b>6자리 코드</b>를 <b>오픈채팅방에 공유</b></li>
+        <li>친구들이 그 코드로 참여하면 같은 순위표에 모여요</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>🙋 참여하는 사람 (멤버)</h3>
+      <ol class="steps">
+        <li>방장에게 받은 <b>6자리 코드</b>를 <b>참여</b> 칸에 입력</li>
+        <li>매일 위처럼 인증하면 끝</li>
+        <li><b>🏆 리더보드</b>(순위)와 <b>📋 출석부</b>(전체 표)로 서로 확인</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>📷 인증 이미지 공유</h3>
+      <p>챌린지 탭 오른쪽 위 <span class="pill">📷 이미지 공유</span>를 누르면 이번 주 내 운동 인증을 <b>예쁜 카드 이미지</b>로 만들어 오픈채팅·SNS에 바로 공유할 수 있어요.</p>
+    </div>
+    <div class="note">실시간 그룹 순위는 인터넷이 연결돼 있을 때 동기화돼요. 안 보이면 <b>새로고침</b>을 눌러보세요.</div>
+  </section>
+
+  <!-- AI -->
+  <section id="ai">
+    <div class="sec-head"><div class="sec-ic">🤖</div><div>
+      <h2>AI 기능 잘 쓰는 법</h2><p>사진만 잘 찍으면 정확해져요</p></div></div>
+
+    <div class="card">
+      <h3>📷 음식 칼로리 (식단 탭)</h3>
+      <ul class="plain">
+        <li>음식이 <b>화면에 꽉 차게</b>, <b>위에서</b> 밝은 곳에서 촬영</li>
+        <li>한 접시에 여러 음식이면 합쳐서 추정해요</li>
+        <li>AI 값은 <b>추정치</b>예요 — 나온 숫자를 보고 <b>직접 수정</b>하면 더 정확</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>🤖 자세 체크 (오늘/홈)</h3>
+      <ul class="plain">
+        <li><b>측면(옆)에서</b> 전신이 다 보이게 촬영</li>
+        <li>동작의 <b>가장 낮은 지점</b>(예: 스쿼트 앉은 자세)에서 찍기</li>
+        <li>운동 종류를 고르고 사진을 올리면 <b>점수 · 잘한 점 · 개선점 · 실행 큐</b>를 줘요</li>
+      </ul>
+      <div class="warn">AI 피드백은 <b>참고용</b>이에요. 통증·부상 위험이 있으면 반드시 전문가(트레이너·의료진)에게 확인하세요.</div>
+    </div>
+    <div class="note">인터넷이 없거나 일시적 문제로 AI가 안 되면, 앱이 자동으로 <b>직접 입력</b>으로 바꿔주니 기록은 계속할 수 있어요.</div>
+  </section>
+
+  <!-- 설정/백업 -->
+  <section id="settings">
+    <div class="sec-head"><div class="sec-ic">⚙️</div><div>
+      <h2>설정 & 백업 (설정 탭)</h2><p>내 취향대로 + 안전하게</p></div></div>
+    <div class="card">
+      <ul class="plain">
+        <li><b>내 프로필</b> — 닉네임·지역·나이·성별</li>
+        <li><b>주간 목표</b> — 한 주에 몇 번 하면 "달성"인지 (주 1~7회)</li>
+        <li><b>기본 휴식 시간</b>, <b>무게 단위</b>(kg/lb)</li>
+        <li><b>기기 간 동기화</b> — 코드로 다른 기기와 내 기록을 이어서 보기</li>
+        <li><b>백업</b> — 기록 내보내기(.json) / 불러오기. 폰 바꾸기 전에 한 번!</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="sec-head"><div class="sec-ic">❓</div><div>
+      <h2>자주 묻는 질문</h2><p>궁금한 걸 눌러보세요</p></div></div>
+
+    <details><summary>회원가입 해야 하나요?</summary><div class="a"><p>아니요. 로그인·가입 없이 바로 씁니다. 기록은 <b>내 폰(브라우저)에 자동 저장</b>돼요.</p></div></details>
+    <details><summary>기록이 사라지지 않나요?</summary><div class="a"><p>같은 브라우저로 열면 계속 남아있어요. 다만 <b>브라우저 데이터를 지우면 사라질 수</b> 있으니, 중요하면 설정 → <b>백업(내보내기)</b>를 해두세요. 그룹 챌린지에 참여하면 그룹 기록은 클라우드에도 동기화됩니다.</p></div></details>
+    <details><summary>폰을 바꾸면 기록을 옮길 수 있나요?</summary><div class="a"><p>네. 설정 → <b>기기 간 동기화</b> 코드를 만들어 새 폰에서 그 코드로 이으면 돼요. 또는 <b>백업 내보내기 → 새 폰에서 불러오기</b>도 가능합니다.</p></div></details>
+    <details><summary>인터넷이 없어도 되나요?</summary><div class="a"><p>내 운동·식단 기록은 <b>오프라인에서도</b> 돼요. <b>그룹 순위·AI 분석·사진 업로드</b>만 인터넷이 필요합니다.</p></div></details>
+    <details><summary>돈이 드나요?</summary><div class="a"><p>앱은 <b>완전 무료</b>예요. AI(자세·칼로리)는 관리자가 준비해둔 기능으로, 사용자는 추가 비용 없이 그냥 쓰면 됩니다.</p></div></details>
+    <details><summary>운동만 하고 세트 기록은 귀찮아요.</summary><div class="a"><p>괜찮아요! <b>챌린지 탭</b>에서 요일 칸에 <b>운동한 시간만</b> 톡 쳐도 인증돼요. 세트·무게 상세 기록은 원할 때만 하면 됩니다.</p></div></details>
+    <details><summary>사진은 누구나 볼 수 있나요?</summary><div class="a"><p>같은 <b>그룹 챌린지 코드</b>에 참여한 사람끼리 인증 사진을 볼 수 있어요. 코드를 모르는 사람은 볼 수 없습니다.</p></div></details>
+  </section>
+
+  <div class="divider"></div>
+
+  <a class="backtop" href="#">▲ 맨 위로</a>
+
+  <footer>
+    <svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><g fill="url(#lg)">
+      <rect x="30" y="45" width="40" height="10" rx="5"/><rect x="14" y="32" width="12" height="36" rx="4"/>
+      <rect x="26" y="38" width="7" height="24" rx="3"/><rect x="74" y="32" width="12" height="36" rx="4"/>
+      <rect x="67" y="38" width="7" height="24" rx="3"/></g></svg>
+    <div><b style="color:var(--muted)">정훈이와 찬양하라</b></div>
+    <div style="margin-top:4px">매일 조금씩, 함께라서 꾸준하게 💪</div>
+    <div style="margin-top:10px"><a href="https://skdyddns-max.github.io/almalka/" style="font-weight:800">👉 앱 열러 가기</a></div>
+  </footer>
+
+</div>
+</body>
+</html>

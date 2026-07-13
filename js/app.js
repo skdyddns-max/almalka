@@ -1250,6 +1250,7 @@ function renderSettings() {
   el.innerHTML = `
     <header class="tab-head"><div class="th-left"><span class="kicker">Settings</span><h2>설정</h2></div></header>
     <button id="s-help" class="help-btn">📖 사용법 · 도움말 보기<span>${BRAND.name} 쓰는 법이 궁금하면 여기!</span></button>
+    <a href="guide.html" class="help-btn" style="display:block;text-decoration:none">📘 자세한 사용설명서<span>처음이신 분·운동방 친구에게 공유하기 좋아요</span></a>
     <div class="set-group">
       <div class="set-item">내 프로필
         <button id="s-profile" class="pill-btn ghost">${p.nick ? esc(p.nick) + (pmeta ? ` · ${esc(pmeta)}` : '') : '설정하기'}</button>
