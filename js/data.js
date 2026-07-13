@@ -79,6 +79,7 @@ const BUILTIN_EXERCISES = [
   { id: 'row_machine',  part: 'cardio',   type: 'time', name: '로잉머신' },
   { id: 'stairs',       part: 'cardio',   type: 'time', name: '스텝밀' },
   { id: 'jump_rope',    part: 'cardio',   type: 'time', name: '줄넘기' },
+  ...EXTRA_EXERCISES,
 ];
 
 /* 세트 타입 — 워밍업은 볼륨/PR에서 제외 */

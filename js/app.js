@@ -417,43 +417,58 @@ function beep() {
 /* ===== 운동 선택 모달 ===== */
 function openPicker() {
   const m = document.querySelector('#picker');
-  const parts = PARTS.map(p => `<button class="pk-part" data-part="${p.id}">${p.emoji} ${p.name}</button>`).join('');
+  const parts = `<button class="pk-part" data-part="all">전체</button>` + PARTS.map(p => `<button class="pk-part" data-part="${p.id}">${p.emoji} ${p.name}</button>`).join('');
+  const equipments = `<button class="pk-equipment on" data-equipment="all">전체 기구</button>` + EQUIPMENT.map(x => `<button class="pk-equipment" data-equipment="${x.id}">${x.emoji} ${x.name}</button>`).join('');
   m.querySelector('#pk-body').innerHTML = `
-    <input id="pk-search" placeholder="운동 검색…" autocomplete="off">
+    <div class="pk-summary"><b>${allExercises().length}개 운동</b><span>부위와 기구로 빠르게 찾아보세요</span></div>
+    <input id="pk-search" placeholder="운동 이름·부위·기구 검색…" autocomplete="off">
+    <span class="pk-filter-label">부위</span>
     <div class="pk-parts">${parts}</div>
+    <span class="pk-filter-label">기구·방식</span>
+    <div class="pk-equipments">${equipments}</div>
     <div id="pk-list"></div>`;
-  let curPart = PARTS[0].id;
-  const renderList = (part, q) => {
-    let list = part ? exercisesByPart(part) : allExercises();
-    if (q) list = allExercises().filter(e => e.name.includes(q));
-    document.querySelector('#pk-list').innerHTML = list.map(e => {
+  let curPart = 'all', curEquipment = 'all', query = '';
+  const renderList = () => {
+    const q = query.toLowerCase().replace(/\s/g, '');
+    const list = allExercises().filter(e => {
+      const equipment = exerciseEquipment(e), p = PART_MAP[e.part];
+      const haystack = `${e.name}${p?.name || ''}${EQUIPMENT_MAP[equipment]?.name || ''}`.toLowerCase().replace(/\s/g, '');
+      return (curPart === 'all' || e.part === curPart) && (curEquipment === 'all' || equipment === curEquipment) && (!q || haystack.includes(q));
+    });
+    document.querySelector('#pk-list').innerHTML = `<p class="pk-count">검색 결과 <b>${list.length}개</b></p>` + list.map(e => {
       const p = PART_MAP[e.part];
-      return `<button class="pk-item" data-id="${e.id}"><span class="pk-emoji">${p.emoji}</span> ${esc(e.name)} <small>${p.name}</small></button>`;
-    }).join('') + `<button class="pk-item pk-new" data-new="1">＋ 새 운동 만들기</button>`;
+      const eq = EQUIPMENT_MAP[exerciseEquipment(e)] || EQUIPMENT_MAP.etc;
+      return `<button class="pk-item" data-id="${e.id}"><span class="pk-emoji">${p.emoji}</span><span>${esc(e.name)}<small class="pk-meta">${p.name} · ${eq.name}</small></span></button>`;
+    }).join('') + (!list.length ? '<p class="pk-empty">조건에 맞는 기본 운동이 없어요.<br>직접 만들어 추가할 수 있어요.</p>' : '') + `<button class="pk-item pk-new" data-new="1">＋ ${query ? `“${esc(query)}” ` : ''}새 운동 만들기</button>`;
   };
-  renderList(curPart, '');
+  renderList();
   m.querySelectorAll('.pk-part').forEach(b => b.addEventListener('click', () => {
     curPart = b.dataset.part;
     m.querySelectorAll('.pk-part').forEach(x => x.classList.toggle('on', x === b));
-    document.querySelector('#pk-search').value = '';
-    renderList(curPart, '');
+    renderList();
   }));
   m.querySelectorAll('.pk-part')[0].classList.add('on');
-  m.querySelector('#pk-search').addEventListener('input', e => renderList(null, e.target.value.trim()));
+  m.querySelectorAll('.pk-equipment').forEach(b => b.addEventListener('click', () => {
+    curEquipment = b.dataset.equipment;
+    m.querySelectorAll('.pk-equipment').forEach(x => x.classList.toggle('on', x === b));
+    renderList();
+  }));
+  m.querySelector('#pk-search').addEventListener('input', e => { query = e.target.value.trim(); renderList(); });
   m.querySelector('#pk-list').addEventListener('click', e => {
     const it = e.target.closest('.pk-item'); if (!it) return;
-    if (it.dataset.new) { closeModal('#picker'); openNewExercise(); return; }
+    if (it.dataset.new) { closeModal('#picker'); openNewExercise({ name: query, part: curPart, equipment: curEquipment }); return; }
     addExercise(it.dataset.id);
     closeModal('#picker');
   });
   openModal('#picker');
 }
 
-function openNewExercise() {
+function openNewExercise(prefill = {}) {
   const m = document.querySelector('#newex');
   m.querySelector('#nx-body').innerHTML = `
-    <label>운동 이름<input id="nx-name" placeholder="예: 스미스 스쿼트" maxlength="24"></label>
-    <label>부위<select id="nx-part">${PARTS.map(p => `<option value="${p.id}">${p.emoji} ${p.name}</option>`).join('')}</select></label>
+    <label>운동 이름<input id="nx-name" value="${esc(prefill.name || '')}" placeholder="예: 스미스 스쿼트" maxlength="24"></label>
+    <label>부위<select id="nx-part">${PARTS.map(p => `<option value="${p.id}" ${prefill.part === p.id ? 'selected' : ''}>${p.emoji} ${p.name}</option>`).join('')}</select></label>
+    <label>기구·방식<select id="nx-equipment">${EQUIPMENT.map(x => `<option value="${x.id}" ${prefill.equipment === x.id ? 'selected' : ''}>${x.emoji} ${x.name}</option>`).join('')}</select></label>
     <label>기록 방식<select id="nx-type">
       <option value="wr">무게 + 횟수</option>
       <option value="br">맨몸 횟수</option>
@@ -464,7 +479,7 @@ function openNewExercise() {
   m.querySelector('#nx-save').addEventListener('click', () => {
     const name = m.querySelector('#nx-name').value.trim();
     if (!name) { alert('운동 이름을 입력해주세요.'); return; }
-    const ex = { id: 'c_' + uid(), name, part: m.querySelector('#nx-part').value, type: m.querySelector('#nx-type').value };
+    const ex = { id: 'c_' + uid(), name, part: m.querySelector('#nx-part').value, equipment: m.querySelector('#nx-equipment').value, type: m.querySelector('#nx-type').value };
     state.customExercises.push(ex); saveState();
     closeModal('#newex');
     if (active) addExercise(ex.id); else render();
@@ -532,22 +547,39 @@ function openRoutineEdit(rtId) {
 }
 function pickForRoutine(draft, back) {
   const m = document.querySelector('#picker');
-  const parts = PARTS.map(p => `<button class="pk-part" data-part="${p.id}">${p.emoji} ${p.name}</button>`).join('');
-  m.querySelector('#pk-body').innerHTML = `<div class="pk-parts">${parts}</div><div id="pk-list"></div>`;
-  const renderList = (part) => {
-    document.querySelector('#pk-list').innerHTML = exercisesByPart(part).map(e =>
-      `<button class="pk-item ${draft.exIds.includes(e.id) ? 'chosen' : ''}" data-id="${e.id}">${draft.exIds.includes(e.id) ? '✓ ' : ''}${esc(e.name)}</button>`).join('');
+  const parts = `<button class="pk-part on" data-part="all">전체</button>` + PARTS.map(p => `<button class="pk-part" data-part="${p.id}">${p.emoji} ${p.name}</button>`).join('');
+  const equipments = `<button class="pk-equipment on" data-equipment="all">전체 기구</button>` + EQUIPMENT.map(x => `<button class="pk-equipment" data-equipment="${x.id}">${x.emoji} ${x.name}</button>`).join('');
+  m.querySelector('#pk-body').innerHTML = `<div class="pk-summary"><b>${allExercises().length}개 운동</b><span>루틴에 넣을 운동을 선택하세요</span></div>
+    <input id="pk-search" placeholder="운동 이름·부위·기구 검색…" autocomplete="off">
+    <span class="pk-filter-label">부위</span><div class="pk-parts">${parts}</div>
+    <span class="pk-filter-label">기구·방식</span><div class="pk-equipments">${equipments}</div><div id="pk-list"></div>`;
+  let cur = 'all', curEquipment = 'all', query = '';
+  const renderList = () => {
+    const q = query.toLowerCase().replace(/\s/g, '');
+    const list = allExercises().filter(e => {
+      const equipment = exerciseEquipment(e), p = PART_MAP[e.part];
+      const haystack = `${e.name}${p?.name || ''}${EQUIPMENT_MAP[equipment]?.name || ''}`.toLowerCase().replace(/\s/g, '');
+      return (cur === 'all' || e.part === cur) && (curEquipment === 'all' || equipment === curEquipment) && (!q || haystack.includes(q));
+    });
+    document.querySelector('#pk-list').innerHTML = `<p class="pk-count">검색 결과 <b>${list.length}개</b> · 선택 ${draft.exIds.length}개</p>` + list.map(e => {
+      const eq = EQUIPMENT_MAP[exerciseEquipment(e)] || EQUIPMENT_MAP.etc;
+      return `<button class="pk-item ${draft.exIds.includes(e.id) ? 'chosen' : ''}" data-id="${e.id}"><span>${draft.exIds.includes(e.id) ? '✓ ' : ''}${esc(e.name)}<small class="pk-meta">${PART_MAP[e.part].name} · ${eq.name}</small></span></button>`;
+    }).join('') + (!list.length ? '<p class="pk-empty">조건에 맞는 운동이 없어요.</p>' : '');
   };
-  let cur = PARTS[0].id; renderList(cur);
-  m.querySelectorAll('.pk-part').forEach((b, idx) => { if (idx === 0) b.classList.add('on'); b.addEventListener('click', () => {
-    cur = b.dataset.part; m.querySelectorAll('.pk-part').forEach(x => x.classList.toggle('on', x === b)); renderList(cur);
-  }); });
+  renderList();
+  m.querySelectorAll('.pk-part').forEach(b => b.addEventListener('click', () => {
+    cur = b.dataset.part; m.querySelectorAll('.pk-part').forEach(x => x.classList.toggle('on', x === b)); renderList();
+  }));
+  m.querySelectorAll('.pk-equipment').forEach(b => b.addEventListener('click', () => {
+    curEquipment = b.dataset.equipment; m.querySelectorAll('.pk-equipment').forEach(x => x.classList.toggle('on', x === b)); renderList();
+  }));
+  m.querySelector('#pk-search').addEventListener('input', e => { query = e.target.value.trim(); renderList(); });
   m.querySelector('#pk-list').addEventListener('click', e => {
     const it = e.target.closest('.pk-item'); if (!it) return;
     const id = it.dataset.id;
     if (draft.exIds.includes(id)) draft.exIds = draft.exIds.filter(x => x !== id);
     else draft.exIds.push(id);
-    renderList(cur);
+    renderList();
   });
   const done = document.createElement('button');
   done.className = 'big-btn small'; done.textContent = '완료'; done.style.marginTop = '12px';
