@@ -89,9 +89,9 @@ function renderDiet() {
         ${macro('지방', t.fat, goal.fat, '#FF7A9C')}
       </div>
     </div>
-    <input id="me-file" type="file" accept="image/*" capture="environment" hidden>
+    <input id="me-file" type="file" accept="image/*" hidden>
     ${groups}
-    <p class="hint" style="margin-top:14px">📷 <b>사진으로 칼로리</b>는 AI가 음식 사진을 보고 칼로리·영양을 추정해요. ${aiReady() ? '' : '<b>AI 설정 전에는</b> 직접 추가로 기록하세요.'}</p>`;
+    <p class="hint" style="margin-top:14px">📷 <b>사진으로 칼로리</b>는 AI가 음식 사진을 보고 칼로리·영양을 추정해요. <b>새로 촬영</b>하거나 <b>앨범의 기존 사진</b>을 골라도 됩니다. ${aiReady() ? '' : '<b>AI 설정 전에는</b> 직접 추가로 기록하세요.'}</p>`;
 
   animateCounts(el); animateFills(el);
   el.querySelector('#diet-goal').addEventListener('click', openDietGoal);
@@ -106,42 +106,79 @@ function renderDiet() {
 function openMealEdit(meal, editId, prefill) {
   const ds = dietDayStr();
   const existing = editId ? dietFor(ds).find(x => x.id === editId) : null;
-  const cur = existing || prefill || { meal: meal || 'breakfast', name: '', kcal: '', carb: '', protein: '', fat: '', photo: null };
+  const base = existing || prefill || { meal: meal || 'breakfast', name: '', kcal: '', carb: '', protein: '', fat: '', photo: null };
+  const vals = { meal: base.meal || 'breakfast', name: base.name || '', kcal: base.kcal ?? '', carb: base.carb ?? '', protein: base.protein ?? '', fat: base.fat ?? '' };
+  let photo = base.photo || null, aiBusy = false;
   const m = document.querySelector('#meal-edit');
   m.querySelector('.modal-head h3').textContent = existing ? '음식 편집' : '음식 추가';
-  m.querySelector('#me-body').innerHTML = `
-    ${cur.photo ? `<div class="me-photo"><img src="${cur.photo}" alt=""></div>` : ''}
-    <label>음식 이름<input id="me-name" value="${esc(cur.name || '')}" placeholder="예: 닭가슴살 100g" maxlength="40"></label>
-    <div class="me-grid">
-      <label>끼니<select id="me-meal">${MEALS.map(x => `<option value="${x.id}" ${cur.meal === x.id ? 'selected' : ''}>${x.ic} ${x.label}</option>`).join('')}</select></label>
-      <label>칼로리(kcal)<input id="me-kcal" type="number" inputmode="numeric" value="${cur.kcal ?? ''}" placeholder="0"></label>
-    </div>
-    <div class="me-grid3">
-      <label>탄수(g)<input id="me-carb" type="number" inputmode="decimal" value="${cur.carb ?? ''}" placeholder="0"></label>
-      <label>단백(g)<input id="me-protein" type="number" inputmode="decimal" value="${cur.protein ?? ''}" placeholder="0"></label>
-      <label>지방(g)<input id="me-fat" type="number" inputmode="decimal" value="${cur.fat ?? ''}" placeholder="0"></label>
-    </div>
-    <button id="me-save" class="big-btn">${existing ? '저장' : '추가'}</button>
-    ${existing ? '<button id="me-remove" class="text-btn danger">삭제</button>' : ''}`;
-  m.querySelector('#me-save').addEventListener('click', () => {
+
+  const read = () => {   // 현재 입력값 보존 (재렌더 전 호출)
+    if (!m.querySelector('#me-name')) return;
+    vals.name = m.querySelector('#me-name').value; vals.meal = m.querySelector('#me-meal').value;
+    vals.kcal = m.querySelector('#me-kcal').value; vals.carb = m.querySelector('#me-carb').value;
+    vals.protein = m.querySelector('#me-protein').value; vals.fat = m.querySelector('#me-fat').value;
+  };
+  const draw = () => {
+    m.querySelector('#me-body').innerHTML = `
+      <div class="me-photo-box">
+        ${photo
+          ? `<div class="me-photo"><img src="${photo}" alt=""><button type="button" id="me-delphoto">✕ 사진 삭제</button></div>
+             ${aiReady() ? `<button type="button" id="me-aiphoto" class="me-ai-btn" ${aiBusy ? 'disabled' : ''}>${aiBusy ? 'AI 분석 중…' : '🤖 이 사진으로 칼로리 자동 채우기'}</button>` : ''}`
+          : `<button type="button" id="me-addphoto" class="me-photo-add">🖼️ 사진 첨부 <small>(앨범·촬영 모두 가능, 선택)</small></button>`}
+        <input id="me-photofile" type="file" accept="image/*" hidden>
+      </div>
+      <label>음식 이름<input id="me-name" value="${esc(vals.name)}" placeholder="예: 닭가슴살 100g" maxlength="40"></label>
+      <div class="me-grid">
+        <label>끼니<select id="me-meal">${MEALS.map(x => `<option value="${x.id}" ${vals.meal === x.id ? 'selected' : ''}>${x.ic} ${x.label}</option>`).join('')}</select></label>
+        <label>칼로리(kcal)<input id="me-kcal" type="number" inputmode="numeric" value="${vals.kcal ?? ''}" placeholder="0"></label>
+      </div>
+      <div class="me-grid3">
+        <label>탄수(g)<input id="me-carb" type="number" inputmode="decimal" value="${vals.carb ?? ''}" placeholder="0"></label>
+        <label>단백(g)<input id="me-protein" type="number" inputmode="decimal" value="${vals.protein ?? ''}" placeholder="0"></label>
+        <label>지방(g)<input id="me-fat" type="number" inputmode="decimal" value="${vals.fat ?? ''}" placeholder="0"></label>
+      </div>
+      <button id="me-save" class="big-btn">${existing ? '저장' : '추가'}</button>
+      ${existing ? '<button id="me-remove" class="text-btn danger">삭제</button>' : ''}`;
+    m.querySelector('#me-addphoto')?.addEventListener('click', () => m.querySelector('#me-photofile').click());
+    m.querySelector('#me-delphoto')?.addEventListener('click', () => { read(); photo = null; draw(); });
+    m.querySelector('#me-photofile').addEventListener('change', async e => {
+      const f = e.target.files[0]; if (!f) return;
+      read();
+      try { const blob = await compressImage(f); photo = await blobToDataURL(blob); } catch { toast('사진을 불러오지 못했어요'); }
+      draw();
+    });
+    m.querySelector('#me-aiphoto')?.addEventListener('click', runAI);
+    m.querySelector('#me-save').addEventListener('click', save);
+    m.querySelector('#me-remove')?.addEventListener('click', () => { delMeal(existing.id); closeModal('#meal-edit'); });
+  };
+  const runAI = async () => {
+    if (aiBusy || !photo) return;
+    read(); aiBusy = true; draw();
+    try {
+      const r = await aiCall({ mode: 'food', image: photo });
+      vals.name = r.name || vals.name || '음식';
+      if (r.kcal != null) vals.kcal = r.kcal; if (r.carb != null) vals.carb = r.carb;
+      if (r.protein != null) vals.protein = r.protein; if (r.fat != null) vals.fat = r.fat;
+      toast('AI 추정 완료! 값을 확인·수정하세요');
+    } catch (e) { toast(aiErrMsg(e)); }
+    aiBusy = false; draw();
+  };
+  const save = () => {
+    read();
     const item = {
       id: existing ? existing.id : uid(),
-      meal: m.querySelector('#me-meal').value,
-      name: m.querySelector('#me-name').value.trim() || '음식',
-      kcal: parseInt(m.querySelector('#me-kcal').value) || 0,
-      carb: parseFloat(m.querySelector('#me-carb').value) || 0,
-      protein: parseFloat(m.querySelector('#me-protein').value) || 0,
-      fat: parseFloat(m.querySelector('#me-fat').value) || 0,
-      photo: cur.photo || null,
+      meal: vals.meal, name: (vals.name || '').trim() || '음식',
+      kcal: parseInt(vals.kcal) || 0, carb: parseFloat(vals.carb) || 0,
+      protein: parseFloat(vals.protein) || 0, fat: parseFloat(vals.fat) || 0,
+      photo: photo || null,
     };
     if (!state.diet) state.diet = {};
     if (!state.diet[ds]) state.diet[ds] = [];
     if (existing) { const i = state.diet[ds].findIndex(x => x.id === existing.id); state.diet[ds][i] = item; }
     else state.diet[ds].push(item);
     saveState(); closeModal('#meal-edit'); renderDiet(); toast(existing ? '저장했어요' : '추가했어요 🍱');
-  });
-  m.querySelector('#me-remove')?.addEventListener('click', () => { delMeal(existing.id); closeModal('#meal-edit'); });
-  openModal('#meal-edit');
+  };
+  draw(); openModal('#meal-edit');
 }
 function delMeal(id) {
   const ds = dietDayStr();
@@ -334,8 +371,8 @@ function aiFormCheck(prefillExId) {
     m.querySelector('#af-body').innerHTML = `
       <label>운동 선택<select id="af-ex">${exs.map(e => `<option value="${e.id}" ${e.id === exId ? 'selected' : ''}>${esc(e.name)}</option>`).join('')}</select></label>
       <div class="af-photo">
-        ${photo ? `<img src="${photo}" alt="">` : `<button id="af-pick" type="button" class="qd-photobtn">📷 자세 사진 올리기 <small>(측면 촬영 권장)</small></button>`}
-        <input id="af-file" type="file" accept="image/*" capture="environment" hidden>
+        ${photo ? `<img src="${photo}" alt="">` : `<button id="af-pick" type="button" class="qd-photobtn">📷 자세 사진 올리기 <small>(촬영·앨범, 측면 권장)</small></button>`}
+        <input id="af-file" type="file" accept="image/*" hidden>
       </div>
       ${photo ? `<button id="af-run" class="big-btn" ${busy ? 'disabled' : ''}>${busy ? 'AI 분석 중…' : '🤖 자세 분석하기'}</button>
         <button id="af-reset" class="text-btn">다른 사진</button>` : ''}

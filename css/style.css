@@ -568,8 +568,14 @@ input, select { font-family: inherit; }
 .mg-cam-btn { border-style: solid; background: var(--accent-soft); color: var(--accent); border-color: transparent; }
 .me-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .me-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-.me-photo { text-align: center; margin-bottom: 6px; }
-.me-photo img { max-height: 160px; max-width: 100%; border-radius: var(--r); }
+.me-photo-box { margin-bottom: 6px; }
+.me-photo { text-align: center; }
+.me-photo img { max-height: 180px; max-width: 100%; border-radius: var(--r); }
+.me-photo > button { display: block; margin: 6px auto 0; background: transparent; color: var(--faint); font-size: 12.5px; font-weight: 700; padding: 4px 10px; }
+.me-photo-add { width: 100%; padding: 15px; border-radius: var(--r); border: 1px dashed var(--line2); background: transparent; color: var(--muted); font-weight: 700; font-size: 14px; }
+.me-photo-add small { color: var(--faint); font-weight: 600; }
+.me-ai-btn { width: 100%; margin-top: 8px; padding: 11px; border-radius: var(--r); background: var(--accent-soft); color: var(--accent); font-weight: 800; font-size: 13.5px; border: none; }
+.me-ai-btn:disabled { opacity: .6; }
 
 /* ---- 1RM 계산기 ---- */
 .orm-result { text-align: center; background: var(--card2); border-radius: var(--r); padding: 14px; margin: 4px 0 8px; }

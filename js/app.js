@@ -1007,7 +1007,7 @@ function openQuickDay(ds) {
       <div class="qd-presets">${pre.map(p => `<button class="qd-chip ${cur === p[0] * 60 ? 'on' : ''}" data-kind="${kind}" data-min="${p[0]}">${p[1]}</button>`).join('')}</div>
       <label>직접 입력 (분)<input id="qd-${kind}-min" type="number" inputmode="numeric" placeholder="예: 30" value="${cur ? Math.round(cur / 60) : ''}"></label>
       <div class="qd-photo">${shown ? `<div class="qd-thumb"><img src="${shown}" alt=""><button data-del="${kind}" type="button">✕ 사진 삭제</button></div>` : `<button data-pbtn="${kind}" type="button" class="qd-photobtn">📷 사진 인증 추가 <small>(선택)</small></button>`}
-        <input id="qd-${kind}-file" type="file" accept="image/*" capture="environment" hidden></div>
+        <input id="qd-${kind}-file" type="file" accept="image/*" hidden></div>
     </div>`;
   };
   const draw = () => {
