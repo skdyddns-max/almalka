@@ -43,8 +43,10 @@ function extractJSON(text: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   try {
-    const key = Deno.env.get("ANTHROPIC_API_KEY");
+    // 시크릿에 개행/공백/비-ASCII가 섞이면 헤더 구성이 실패하므로 인쇄가능 ASCII만 남김
+    const key = (Deno.env.get("ANTHROPIC_API_KEY") || "").replace(/[^\x21-\x7E]/g, "");
     if (!key) return json({ error: "no-api-key" }, 500);
+    if (!key.startsWith("sk-ant-")) return json({ error: "bad-api-key-format" }, 500);
     const { mode, image, exercise } = await req.json();
     if (!PROMPTS[mode]) return json({ error: "bad-mode" }, 400);
     const img = parseImage(image);
