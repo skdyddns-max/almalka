@@ -67,7 +67,11 @@ Deno.serve(async (req) => {
         }],
       }),
     });
-    if (!r.ok) return json({ error: "anthropic-" + r.status }, 502);
+    if (!r.ok) {
+      const detail = (await r.text()).slice(0, 300);
+      const lowCredit = detail.includes("credit balance is too low");
+      return json({ error: lowCredit ? "low-credit" : "anthropic-" + r.status }, 502);
+    }
     const data = await r.json();
     const text = (data.content || []).map((c: { text?: string }) => c.text || "").join("");
     return json(extractJSON(text));

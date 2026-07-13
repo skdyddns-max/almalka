@@ -299,9 +299,8 @@ async function aiCall(payload) {
     body: JSON.stringify(payload),
   });
   if (res.status === 404) throw new Error('not-deployed');
-  if (!res.ok) throw new Error('ai-' + res.status);
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
+  const data = await res.json().catch(() => ({ error: 'ai-' + res.status }));
+  if (!res.ok || data.error) throw new Error(data.error || 'ai-' + res.status);
   return data;
 }
 
@@ -379,6 +378,7 @@ function afResultHTML(r) {
 }
 function aiErrMsg(err) {
   const c = String(err && err.message || err);
+  if (c.includes('low-credit')) return 'AI 크레딧이 부족해요. 직접 입력해 주세요. (관리자: Anthropic 크레딧 충전 필요)';
   if (c.includes('not-deployed') || c.includes('no-endpoint')) return 'AI 기능이 아직 설정되지 않았어요. 직접 입력해 주세요.';
   if (c.includes('ai-4')) return 'AI 요청이 거부됐어요(키·권한 확인). 직접 입력해 주세요.';
   return 'AI 분석에 실패했어요. 직접 입력해 주세요.';
