@@ -27,6 +27,93 @@ function dietTotals(ds) {
   }), { kcal: 0, carb: 0, protein: 0, fat: 0 });
 }
 
+function canvasBlob(canvas) {
+  return new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('이미지 생성 실패')), 'image/png'));
+}
+function loadDietImage(src) {
+  return new Promise(resolve => {
+    if (!src) return resolve(null);
+    const img = new Image();
+    img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = src;
+  });
+}
+function roundRect(ctx, x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath(); ctx.moveTo(x + rr, y); ctx.lineTo(x + w - rr, y); ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+  ctx.lineTo(x + w, y + h - rr); ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+  ctx.lineTo(x + rr, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+  ctx.lineTo(x, y + rr); ctx.quadraticCurveTo(x, y, x + rr, y); ctx.closePath(); return ctx;
+}
+function fitCanvasText(ctx, text, maxWidth) {
+  const s = String(text || '음식');
+  if (ctx.measureText(s).width <= maxWidth) return s;
+  let out = s;
+  while (out.length && ctx.measureText(out + '…').width > maxWidth) out = out.slice(0, -1);
+  return out + '…';
+}
+
+async function shareDietCard() {
+  const ds = dietDayStr(), items = dietFor(ds), t = dietTotals(ds);
+  if (!items.length) { toast('먼저 식단을 하나 이상 기록해 주세요'); return; }
+  const goal = state.dietGoal || { kcal: 2000, carb: 250, protein: 130, fat: 60 };
+  const groups = MEALS.map(m => ({ ...m, items: items.filter(x => x.meal === m.id) })).filter(g => g.items.length);
+  const W = 1080, pad = 70, headerH = 390, groupHead = 78, rowH = 122, groupGap = 28;
+  const H = headerH + groups.reduce((n, g) => n + groupHead + g.items.length * rowH + groupGap, 0) + 100;
+  const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const photos = await Promise.all(items.map(x => loadDietImage(x.photo)));
+  const photoById = new Map(items.map((x, i) => [x.id, photos[i]]));
+
+  ctx.fillStyle = '#11151f'; ctx.fillRect(0, 0, W, H);
+  const glow = ctx.createRadialGradient(W * .85, 0, 10, W * .85, 0, 520);
+  glow.addColorStop(0, 'rgba(91,224,176,.24)'); glow.addColorStop(1, 'rgba(91,224,176,0)');
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, 620);
+  ctx.fillStyle = '#5be0b0'; roundRect(ctx, pad, 62, 115, 42, 21).fill();
+  ctx.fillStyle = '#10151d'; ctx.font = '800 22px -apple-system, BlinkMacSystemFont, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('MY DIET', pad + 57, 91);
+  ctx.textAlign = 'left'; ctx.fillStyle = '#ffffff'; ctx.font = '800 52px -apple-system, BlinkMacSystemFont, sans-serif';
+  const d = new Date(ds); ctx.fillText(`${d.getMonth() + 1}월 ${d.getDate()}일 식단`, pad, 166);
+  ctx.fillStyle = '#9aa5b5'; ctx.font = '600 25px -apple-system, BlinkMacSystemFont, sans-serif'; ctx.fillText('오늘 먹은 것을 한눈에 기록했어요', pad, 208);
+  ctx.fillStyle = '#202735'; roundRect(ctx, pad, 238, W - pad * 2, 112, 28).fill();
+  ctx.fillStyle = '#ffffff'; ctx.font = '800 46px -apple-system, BlinkMacSystemFont, sans-serif'; ctx.fillText(`${Math.round(t.kcal).toLocaleString()} kcal`, pad + 32, 306);
+  ctx.fillStyle = '#8490a1'; ctx.font = '600 22px -apple-system, BlinkMacSystemFont, sans-serif'; ctx.fillText(`/ ${goal.kcal.toLocaleString()} 목표`, pad + 292, 304);
+  const macros = [['탄수', t.carb, '#f6a94a'], ['단백', t.protein, '#5bc8ff'], ['지방', t.fat, '#ff7a9c']];
+  macros.forEach((m, i) => { const x = 590 + i * 142; ctx.fillStyle = m[2]; ctx.font = '800 22px -apple-system, BlinkMacSystemFont, sans-serif'; ctx.fillText(`${m[0]} ${Math.round(m[1])}g`, x, 303); });
+
+  let y = 390;
+  for (const g of groups) {
+    const subtotal = g.items.reduce((n, x) => n + (+x.kcal || 0), 0);
+    ctx.fillStyle = '#1a202c'; roundRect(ctx, pad, y, W - pad * 2, groupHead + g.items.length * rowH, 30).fill();
+    ctx.fillStyle = '#ffffff'; ctx.font = '800 30px -apple-system, BlinkMacSystemFont, sans-serif'; ctx.fillText(`${g.ic}  ${g.label}`, pad + 30, y + 50);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#5be0b0'; ctx.font = '800 24px -apple-system, BlinkMacSystemFont, sans-serif'; ctx.fillText(`${subtotal} kcal`, W - pad - 30, y + 49); ctx.textAlign = 'left';
+    y += groupHead;
+    for (const item of g.items) {
+      ctx.strokeStyle = '#2b3341'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(pad + 28, y); ctx.lineTo(W - pad - 28, y); ctx.stroke();
+      const img = photoById.get(item.id), ix = pad + 28, iy = y + 16, size = 90;
+      ctx.save(); roundRect(ctx, ix, iy, size, size, 20).clip();
+      if (img) { const scale = Math.max(size / img.width, size / img.height), sw = size / scale, sh = size / scale; ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, ix, iy, size, size); }
+      else { ctx.fillStyle = '#293140'; ctx.fillRect(ix, iy, size, size); ctx.font = '40px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(g.ic, ix + size / 2, iy + 59); ctx.textAlign = 'left'; }
+      ctx.restore();
+      ctx.fillStyle = '#ffffff'; ctx.font = '800 28px -apple-system, BlinkMacSystemFont, sans-serif'; ctx.fillText(fitCanvasText(ctx, item.name, 500), ix + 116, y + 49);
+      ctx.fillStyle = '#8994a5'; ctx.font = '600 21px -apple-system, BlinkMacSystemFont, sans-serif'; ctx.fillText(`탄 ${Math.round(item.carb || 0)}g  ·  단 ${Math.round(item.protein || 0)}g  ·  지 ${Math.round(item.fat || 0)}g`, ix + 116, y + 82);
+      ctx.textAlign = 'right'; ctx.fillStyle = '#ffffff'; ctx.font = '800 27px -apple-system, BlinkMacSystemFont, sans-serif'; ctx.fillText(`${item.kcal || 0} kcal`, W - pad - 30, y + 65); ctx.textAlign = 'left';
+      y += rowH;
+    }
+    y += groupGap;
+  }
+  ctx.fillStyle = '#687486'; ctx.font = '600 21px -apple-system, BlinkMacSystemFont, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('정훈이와 찬양하라 · 식단 기록', W / 2, H - 44);
+
+  let blob, file;
+  try { blob = await canvasBlob(canvas); file = new File([blob], `diet-${ds}.png`, { type: 'image/png' }); }
+  catch { toast('이미지를 만들지 못했어요. 다시 시도해 주세요'); return; }
+  if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ title: `${ds} 식단`, text: `${Math.round(t.kcal)} kcal 식단 기록`, files: [file] }); return; }
+    catch (e) { if (e?.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = file.name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('식단 이미지를 저장했어요 📸');
+}
+
 function renderDiet() {
   const el = document.querySelector('#panel-diet');
   const ds = dietDayStr();
@@ -76,7 +163,7 @@ function renderDiet() {
 
   el.innerHTML = `
     <header class="tab-head"><div class="th-left"><span class="kicker">Diet</span><h2>식단</h2></div>
-      <button id="diet-goal" class="pill-btn ghost">🎯 목표</button></header>
+      <div class="diet-head-actions"><button id="diet-share" class="pill-btn">📸 저장</button><button id="diet-goal" class="pill-btn ghost">🎯 목표</button></div></header>
     <div class="diet-datenav">
       <button id="diet-prev">‹</button><b>${dateLabel}</b>
       <button id="diet-next" ${isToday ? 'disabled' : ''}>›</button>
@@ -94,6 +181,7 @@ function renderDiet() {
     <p class="hint" style="margin-top:14px">📷 <b>사진으로 칼로리</b>는 AI가 음식 사진을 보고 칼로리·영양을 추정해요. <b>새로 촬영</b>하거나 <b>앨범의 기존 사진</b>을 골라도 됩니다. ${aiReady() ? '' : '<b>AI 설정 전에는</b> 직접 추가로 기록하세요.'}</p>`;
 
   animateCounts(el); animateFills(el);
+  el.querySelector('#diet-share').addEventListener('click', shareDietCard);
   el.querySelector('#diet-goal').addEventListener('click', openDietGoal);
   el.querySelector('#diet-prev').addEventListener('click', () => { const x = new Date(ds); x.setDate(x.getDate() - 1); dietDate = todayStr(x); renderDiet(); });
   el.querySelector('#diet-next').addEventListener('click', () => { if (isToday) return; const x = new Date(ds); x.setDate(x.getDate() + 1); dietDate = todayStr(x); renderDiet(); });
