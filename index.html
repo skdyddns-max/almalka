@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
   <title>정훈이와 찬양하라 — 운동 인증 습관</title>
   <meta name="description" content="운동방 친구들과 매일 운동·식단을 인증하는 습관 챌린지 (AI 자세·칼로리)">
-  <meta name="theme-color" content="#14171E">
+  <meta name="theme-color" content="#0F1218">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=11">
+  <link rel="stylesheet" href="css/style.css?v=14">
 </head>
 <body>
   <main id="app">
@@ -165,13 +165,21 @@
     </div>
   </div>
 
+  <!-- AI 코치 (주간 리포트·식단 피드백·루틴 추천) -->
+  <div id="ai-coach" class="modal-back" hidden>
+    <div class="modal">
+      <div class="modal-head"><h3>🤖 AI 코치</h3><button data-close="#ai-coach" class="x">✕</button></div>
+      <div id="aic-body" class="modal-body form"></div>
+    </div>
+  </div>
+
   <div id="toast"></div>
 
   <script src="js/config.js"></script>
   <script src="js/exercise-library.js?v=7"></script>
-  <script src="js/data.js?v=11"></script>
-  <script src="js/app.js?v=11"></script>
-  <script src="js/features.js?v=6"></script>
+  <script src="js/data.js?v=14"></script>
+  <script src="js/app.js?v=14"></script>
+  <script src="js/features.js?v=14"></script>
   <script src="js/sync.js"></script>
 </body>
 </html>

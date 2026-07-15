@@ -529,9 +529,11 @@ function renderRoutines() {
   el.innerHTML = `
     <header class="tab-head"><div class="th-left"><span class="kicker">Routines</span><h2>루틴</h2></div>
       <button id="btn-new-rt" class="pill-btn">＋ 새 루틴</button></header>
+    ${typeof aiRoutineRecommend === 'function' ? '<button id="btn-ai-rt" class="ai-cta">🤖 AI 루틴 추천 받기<span>목표·일수만 고르면 주간 루틴을 짜줘요</span></button>' : ''}
     ${state.routines.length ? state.routines.map(routineCard).join('')
       : `<p class="hint">자주 하는 운동을 묶어 루틴으로 저장하면, 홈에서 한 번에 시작할 수 있어요.</p>`}`;
   el.querySelector('#btn-new-rt').addEventListener('click', () => openRoutineEdit(null));
+  el.querySelector('#btn-ai-rt')?.addEventListener('click', () => aiRoutineRecommend());
   el.querySelectorAll('[data-rt-edit]').forEach(b => b.addEventListener('click', () => openRoutineEdit(b.dataset.rtEdit)));
   el.querySelectorAll('[data-rt-start]').forEach(b => b.addEventListener('click', () => startSession(b.dataset.rtStart)));
 }
@@ -729,6 +731,7 @@ function renderStats() {
       <div class="mini-stat"><b data-count="${wk}">0</b><span>이번주 볼륨</span></div>
     </div>
     ${typeof streakCard === 'function' ? streakCard() : ''}
+    ${typeof aiWeeklyReport === 'function' ? '<button id="st-aireport" class="ai-cta">🤖 AI 주간 리포트 받기<span>이번 주 운동·식단을 종합 분석해요</span></button>' : ''}
     <h3 class="sec-title">피로도 · 디로딩</h3>
     ${typeof deloadCard === 'function' ? deloadCard() : ''}
     <h3 class="sec-title">한눈에 보는 숫자</h3>
@@ -754,6 +757,7 @@ function renderStats() {
   if (sel) { sel.addEventListener('change', () => { statExId = sel.value; drawProgress(); }); drawProgress(); }
   animateCounts(el); animateFills(el);
   if (typeof bindBadges === 'function') bindBadges(el);
+  el.querySelector('#st-aireport')?.addEventListener('click', () => aiWeeklyReport());
   el.querySelector('#st-orm')?.addEventListener('click', () => open1RM());
   el.querySelector('#st-hist')?.addEventListener('click', () => switchTab('history'));
   el.querySelector('#st-share')?.addEventListener('click', () => shareWeekCard());

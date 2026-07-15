@@ -20,6 +20,7 @@ function parseImage(dataUrl: string) {
   return { media_type: m[1], data: m[2] };
 }
 
+// 이미지 모드
 const PROMPTS: Record<string, string> = {
   food:
     "너는 영양 분석가야. 사진 속 '한 인분(보이는 양)'의 음식을 추정해. " +
@@ -34,6 +35,28 @@ const PROMPTS: Record<string, string> = {
     "모든 텍스트는 한국어. 사진만으로 판단이 어려우면 summary에 촬영 팁을 넣어.",
 };
 
+// 텍스트 모드 (data JSON을 뒤에 붙임)
+const TEXT_PROMPTS: Record<string, string> = {
+  report:
+    "너는 따뜻하지만 솔직한 개인 피트니스 코치야. 아래 JSON은 회원의 이번 주 운동·식단 데이터. 종합 평가해. " +
+    "반드시 아래 JSON만 출력(설명·코드펜스 금지): " +
+    '{"grade":"A~F 중 하나","summary":"2~3문장 총평","workout":["운동 관련 코멘트 1~2개"],' +
+    '"diet":["식단 코멘트 1~2개"],"nextWeek":["다음 주 구체적 실천 제안 2~3개"]}. ' +
+    "모든 텍스트 한국어, 구체적이고 실행가능하게. 데이터가 적으면 격려 위주로. 데이터: ",
+  dietfeed:
+    "너는 영양 코치야. 아래 JSON은 회원의 하루 식단(목표 대비). 평가해. " +
+    "반드시 아래 JSON만 출력(설명·코드펜스 금지): " +
+    '{"score":0-100 정수,"summary":"한줄 총평","good":["잘한 점 1~2개"],' +
+    '"improve":["개선점 1~2개"],"tip":"내일을 위한 팁 한 줄"}. ' +
+    "모든 텍스트 한국어. 단백질/칼로리 균형을 중점적으로. 데이터: ",
+  routine:
+    "너는 웨이트 트레이닝 프로그램 코치야. 아래 조건에 맞는 주간 분할 루틴을 짜. " +
+    "반드시 아래 JSON만 출력(설명·코드펜스 금지): " +
+    '{"name":"루틴 이름","split":[{"day":"Day 1","focus":"부위","exercises":[{"name":"운동명(한국어)","sets":정수,"reps":"8-12"}]}],"note":"주의·팁 한 줄"}. ' +
+    "요청한 주당 일수만큼 day를 만들고, 각 day에 운동 4~6개. 한국어. 조건: ",
+};
+const TEXT_MODES = ["report", "dietfeed", "routine"];
+
 function extractJSON(text: string) {
   const s = text.indexOf("{"), e = text.lastIndexOf("}");
   if (s < 0 || e < 0) throw new Error("no-json");
@@ -47,24 +70,29 @@ Deno.serve(async (req) => {
     const key = (Deno.env.get("ANTHROPIC_API_KEY") || "").replace(/[^\x21-\x7E]/g, "");
     if (!key) return json({ error: "no-api-key" }, 500);
     if (!key.startsWith("sk-ant-")) return json({ error: "bad-api-key-format" }, 500);
-    const { mode, image, exercise } = await req.json();
-    if (!PROMPTS[mode]) return json({ error: "bad-mode" }, 400);
-    const img = parseImage(image);
-    const prompt = PROMPTS[mode].replace("{EX}", exercise || "이 운동");
+    const { mode, image, exercise, data } = await req.json();
+    const isText = TEXT_MODES.includes(mode);
+    if (!PROMPTS[mode] && !isText) return json({ error: "bad-mode" }, 400);
+
+    let content;
+    if (isText) {
+      content = [{ type: "text", text: TEXT_PROMPTS[mode] + JSON.stringify(data || {}) }];
+    } else {
+      const img = parseImage(image);
+      const prompt = PROMPTS[mode].replace("{EX}", exercise || "이 운동");
+      content = [
+        { type: "image", source: { type: "base64", media_type: img.media_type, data: img.data } },
+        { type: "text", text: prompt },
+      ];
+    }
 
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 700,
-        messages: [{
-          role: "user",
-          content: [
-            { type: "image", source: { type: "base64", media_type: img.media_type, data: img.data } },
-            { type: "text", text: prompt },
-          ],
-        }],
+        max_tokens: mode === "routine" ? 1600 : 900,
+        messages: [{ role: "user", content }],
       }),
     });
     if (!r.ok) {
@@ -72,8 +100,8 @@ Deno.serve(async (req) => {
       const lowCredit = detail.includes("credit balance is too low");
       return json({ error: lowCredit ? "low-credit" : "anthropic-" + r.status }, 502);
     }
-    const data = await r.json();
-    const text = (data.content || []).map((c: { text?: string }) => c.text || "").join("");
+    const respData = await r.json();
+    const text = (respData.content || []).map((c: { text?: string }) => c.text || "").join("");
     return json(extractJSON(text));
   } catch (e) {
     return json({ error: String((e as Error).message || e) }, 400);

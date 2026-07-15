@@ -163,7 +163,7 @@ function renderDiet() {
 
   el.innerHTML = `
     <header class="tab-head"><div class="th-left"><span class="kicker">Diet</span><h2>식단</h2></div>
-      <div class="diet-head-actions"><button id="diet-share" class="pill-btn">📸 저장</button><button id="diet-goal" class="pill-btn ghost">🎯 목표</button></div></header>
+      <div class="diet-head-actions"><button id="diet-ai" class="pill-btn">🤖 피드백</button><button id="diet-share" class="pill-btn ghost">📸 저장</button><button id="diet-goal" class="pill-btn ghost">🎯 목표</button></div></header>
     <div class="diet-datenav">
       <button id="diet-prev">‹</button><b>${dateLabel}</b>
       <button id="diet-next" ${isToday ? 'disabled' : ''}>›</button>
@@ -182,6 +182,7 @@ function renderDiet() {
 
   animateCounts(el); animateFills(el);
   el.querySelector('#diet-share').addEventListener('click', shareDietCard);
+  el.querySelector('#diet-ai').addEventListener('click', aiDietFeedback);
   el.querySelector('#diet-goal').addEventListener('click', openDietGoal);
   el.querySelector('#diet-prev').addEventListener('click', () => { const x = new Date(ds); x.setDate(x.getDate() - 1); dietDate = todayStr(x); renderDiet(); });
   el.querySelector('#diet-next').addEventListener('click', () => { if (isToday) return; const x = new Date(ds); x.setDate(x.getDate() + 1); dietDate = todayStr(x); renderDiet(); });
@@ -710,4 +711,85 @@ function checkBadgeUnlocks() {
     const b = BADGES.find(x => x.id === fresh[fresh.length - 1]);
     if (b && typeof toast === 'function') setTimeout(() => toast(`🎉 새 업적 달성! ${b.emoji} ${b.name}`), 600);
   }
+}
+
+/* ========== AI 코치 심화 (텍스트 모드) ========== */
+function aiCoachModal() { return document.querySelector('#ai-coach'); }
+function aiCoachLoading(m) { m.querySelector('#aic-body').innerHTML = '<div class="aic-loading"><div class="aic-spin"></div><p>AI가 분석 중이에요…</p></div>'; }
+function aicList(title, arr) { return (arr && arr.length) ? `<div class="aic-sec"><h4>${title}</h4><ul>${arr.map(x => `<li>${esc(String(x))}</li>`).join('')}</ul></div>` : ''; }
+
+async function runAICoach(title, payload, renderFn) {
+  const m = aiCoachModal();
+  m.querySelector('.modal-head h3').textContent = title;
+  aiCoachLoading(m); openModal('#ai-coach');
+  try { const r = await aiCall(payload); m.querySelector('#aic-body').innerHTML = renderFn(r); }
+  catch (e) { m.querySelector('#aic-body').innerHTML = `<p class="hint" style="text-align:center;padding:20px 0">${aiErrMsg(e)}</p>`; }
+}
+
+/* 1) AI 주간 리포트 */
+function aiWeeklyReport() {
+  const data = {
+    운동횟수: weekCount(), 목표: state.settings.weeklyGoal || 3,
+    주간볼륨: Math.round(weekVolume()), 단위: unit(),
+    연속일: calcStreak(), 최고연속: longestStreak(),
+    평균칼로리: weekDietAvg(), 식단기록일수: Object.keys(state.diet || {}).filter(k => (state.diet[k] || []).length).length,
+  };
+  runAICoach('🤖 AI 주간 리포트', { mode: 'report', data }, renderReport);
+}
+function renderReport(r) {
+  const g = (r.grade || '-').toString().slice(0, 2);
+  return `<div class="aic-grade-wrap"><div class="aic-grade">${esc(g)}</div><b>이번 주 종합</b></div>
+    <p class="aic-summary">${esc(r.summary || '')}</p>
+    ${aicList('💪 운동', r.workout)}${aicList('🍱 식단', r.diet)}${aicList('🎯 다음 주 실천', r.nextWeek)}
+    <p class="hint">AI 참고용 조언이에요.</p>`;
+}
+
+/* 2) AI 식단 피드백 */
+function aiDietFeedback() {
+  const ds = dietDayStr(), items = dietFor(ds);
+  if (!items.length) { toast('먼저 식단을 하나 이상 기록해 주세요'); return; }
+  const data = {
+    날짜: ds, 목표: state.dietGoal, 합계: dietTotals(ds),
+    음식: items.map(x => ({ 끼니: x.meal, 이름: x.name, kcal: x.kcal, 탄: x.carb, 단: x.protein, 지: x.fat })),
+  };
+  runAICoach('🤖 AI 식단 피드백', { mode: 'dietfeed', data }, renderDietFeed);
+}
+function renderDietFeed(r) {
+  const score = clamp(+r.score || 0, 0, 100);
+  const col = score >= 80 ? 'var(--mint)' : score >= 60 ? '#F6A94A' : 'var(--accent2)';
+  return `<div class="af-score"><svg viewBox="0 0 80 80"><circle cx="40" cy="40" r="34" fill="none" stroke="var(--bg2)" stroke-width="7"/>
+    <circle cx="40" cy="40" r="34" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round"
+      stroke-dasharray="${2 * Math.PI * 34}" stroke-dashoffset="${2 * Math.PI * 34 * (1 - score / 100)}" transform="rotate(-90 40 40)"/></svg><b>${score}</b></div>
+    <p class="aic-summary">${esc(r.summary || '')}</p>
+    ${aicList('👍 잘한 점', r.good)}${aicList('🔧 개선점', r.improve)}
+    ${r.tip ? `<p class="aic-tip">💡 ${esc(r.tip)}</p>` : ''}
+    <p class="hint">AI 참고용 조언이에요.</p>`;
+}
+
+/* 3) AI 루틴 추천 */
+function aiRoutineRecommend() {
+  const m = aiCoachModal();
+  m.querySelector('.modal-head h3').textContent = '🤖 AI 루틴 추천';
+  m.querySelector('#aic-body').innerHTML = `
+    <label>목표<select id="rt-goal"><option>근비대(벌크)</option><option>근력 향상</option><option>다이어트(컷)</option><option>체력 유지</option></select></label>
+    <label>주당 운동 일수<select id="rt-days">${[2, 3, 4, 5, 6].map(n => `<option value="${n}" ${n === 4 ? 'selected' : ''}>주 ${n}일</option>`).join('')}</select></label>
+    <label>수준<select id="rt-level"><option>초급</option><option selected>중급</option><option>고급</option></select></label>
+    <button id="rt-go" class="big-btn">✨ 루틴 만들기</button>
+    <p class="hint">목표에 맞는 주간 분할 루틴을 AI가 짜줘요.</p>`;
+  openModal('#ai-coach');
+  m.querySelector('#rt-go').addEventListener('click', () => {
+    const data = { 목표: m.querySelector('#rt-goal').value, 주당일수: +m.querySelector('#rt-days').value, 수준: m.querySelector('#rt-level').value };
+    aiCoachLoading(m);
+    aiCall({ mode: 'routine', data }).then(r => { m.querySelector('#aic-body').innerHTML = renderRoutine(r); })
+      .catch(e => { m.querySelector('#aic-body').innerHTML = `<p class="hint" style="text-align:center;padding:20px 0">${aiErrMsg(e)}</p>`; });
+  });
+}
+function renderRoutine(r) {
+  const days = (r.split || []).map(d => `<div class="rt-day">
+    <div class="rt-day-h"><b>${esc(d.day || '')}</b><span>${esc(d.focus || '')}</span></div>
+    ${(d.exercises || []).map(e => `<div class="rt-ex"><span>${esc(e.name || '')}</span><b>${e.sets || ''}세트 × ${esc(String(e.reps || ''))}</b></div>`).join('')}
+  </div>`).join('');
+  return `<h3 class="aic-rt-name">${esc(r.name || '추천 루틴')}</h3>${days}
+    ${r.note ? `<p class="aic-tip">💡 ${esc(r.note)}</p>` : ''}
+    <p class="hint">참고용이에요. 몸 상태·경험에 맞게 조절하세요.</p>`;
 }
