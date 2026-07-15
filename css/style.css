@@ -732,3 +732,42 @@ input, select { font-family: inherit; }
 .af-score { position: relative; width: 80px; height: 80px; margin: 4px auto 10px; }
 .af-score svg { width: 80px; height: 80px; }
 .af-score b { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-size: 26px; }
+
+/* ============ 건강: BMI · 혈당 ============ */
+.bd-diff.good { color: var(--mint); }
+.bd-diff.bad { color: #FF7A7A; }
+.bd-grid { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 360px) { .bd-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* BMI */
+.bmi-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 17px; box-shadow: var(--sh-1); margin: 6px 0 4px; }
+.bmi-top { display: flex; justify-content: space-between; align-items: center; }
+.bmi-main { display: flex; align-items: baseline; gap: 10px; }
+.bmi-label { color: var(--muted); font-size: 13px; font-weight: 800; }
+.bmi-val { font-family: var(--font-display); font-size: 38px; line-height: 1; }
+.bmi-cat { font-size: 13px; font-weight: 800; padding: 3px 10px; border-radius: 99px; }
+.bmi-bar { position: relative; height: 10px; border-radius: 99px; margin: 16px 0 5px;
+  background: linear-gradient(90deg, #6BA8FF 0%, #6BA8FF 17.5%, #5BE0B0 17.5%, #5BE0B0 40%, #F6A94A 40%, #F6A94A 50%, #FF7A59 50%, #FF7A59 75%, #FF5470 75%); }
+.bmi-marker { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 3px solid var(--bg); box-shadow: 0 1px 4px rgba(0,0,0,.5); transform: translate(-50%, -50%); }
+.bmi-scale { display: flex; justify-content: space-between; font-size: 10px; color: var(--faint); font-weight: 700; padding: 0 2px; }
+.bmi-scale span { position: relative; }
+.bmi-setup { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; box-shadow: var(--sh-1); margin: 6px 0 4px; }
+.bmi-setup b { font-size: 15px; } .bmi-setup small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.bmi-hin { display: flex; gap: 6px; flex: 0 0 auto; }
+.bmi-hin input { width: 88px; }
+
+/* 혈당 */
+.glu-latest { display: flex; align-items: center; gap: 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; box-shadow: var(--sh-1); }
+.glu-big { font-family: var(--font-display); font-size: 44px; line-height: 1; }
+.glu-big small { font-family: 'Pretendard', sans-serif; font-size: 15px; color: var(--muted); font-weight: 700; margin-left: 4px; }
+.glu-meta { display: flex; flex-direction: column; gap: 6px; }
+.glu-meta small { color: var(--muted); font-size: 12px; font-weight: 600; }
+.glu-badge { display: inline-block; font-size: 12px; font-weight: 800; padding: 3px 11px; border: 1px solid; border-radius: 99px; width: fit-content; }
+.glu-list { margin-top: 10px; }
+.glu-row { display: flex; align-items: center; gap: 10px; padding: 9px 2px; border-top: 1px solid var(--line); }
+.glu-row:first-child { border-top: none; }
+.glu-rl { flex: 1; min-width: 0; }
+.glu-rl b { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.glu-rl b small { font-size: 11px; color: var(--muted); font-weight: 600; margin-left: 2px; }
+.glu-rl span { display: block; color: var(--muted); font-size: 12px; }
+.glu-del { background: transparent; color: var(--faint); font-size: 14px; padding: 4px 6px; flex: 0 0 auto; }

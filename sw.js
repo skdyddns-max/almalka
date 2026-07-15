@@ -1,15 +1,15 @@
 /* 알려줄까말까 서비스워커 — 오프라인 캐시 (앱 셸 cache-first + 백그라운드 갱신) */
-const VERSION = 'almalka-v14';
+const VERSION = 'almalka-v15';
 const SHELL = [
   './',
   './index.html',
   './guide.html',
-  './css/style.css?v=14',
+  './css/style.css?v=15',
   './js/config.js',
   './js/exercise-library.js?v=7',
-  './js/data.js?v=14',
-  './js/app.js?v=14',
-  './js/features.js?v=14',
+  './js/data.js?v=15',
+  './js/app.js?v=15',
+  './js/features.js?v=15',
   './js/sync.js',
   './manifest.webmanifest',
   './icon-192.png',

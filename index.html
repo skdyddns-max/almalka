@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=14">
+  <link rel="stylesheet" href="css/style.css?v=15">
 </head>
 <body>
   <main id="app">
@@ -26,6 +26,7 @@
     <section class="tab-panel" data-tab="routines" hidden><div id="panel-routines"></div></section>
     <section class="tab-panel" data-tab="history" hidden><div id="panel-history"></div></section>
     <section class="tab-panel" data-tab="stats" hidden><div id="panel-stats"></div></section>
+    <section class="tab-panel" data-tab="body" hidden><div id="panel-body"></div></section>
     <section class="tab-panel" data-tab="challenge" hidden><div id="panel-challenge"></div></section>
     <section class="tab-panel" data-tab="settings" hidden><div id="panel-settings"></div></section>
   </main>
@@ -35,6 +36,7 @@
     <button class="nav-btn" data-tab="diet"><span>🍱</span>식단</button>
     <button class="nav-btn" data-tab="routines"><span>📋</span>루틴</button>
     <button class="nav-btn" data-tab="stats"><span>📈</span>통계</button>
+    <button class="nav-btn" data-tab="body"><span>🩺</span>건강</button>
     <button class="nav-btn" data-tab="challenge"><span>🏅</span>챌린지</button>
     <button class="nav-btn" data-tab="settings"><span>⚙️</span>설정</button>
   </nav>
@@ -173,13 +175,29 @@
     </div>
   </div>
 
+  <!-- 인바디(체성분) 기록 -->
+  <div id="bodyentry" class="modal-back" hidden>
+    <div class="modal">
+      <div class="modal-head"><h3>인바디 기록</h3><button data-close="#bodyentry" class="x">✕</button></div>
+      <div id="be-body" class="modal-body form"></div>
+    </div>
+  </div>
+
+  <!-- 혈당 기록 -->
+  <div id="glucose-entry" class="modal-back" hidden>
+    <div class="modal">
+      <div class="modal-head"><h3>🩸 혈당 기록</h3><button data-close="#glucose-entry" class="x">✕</button></div>
+      <div id="glu-body" class="modal-body form"></div>
+    </div>
+  </div>
+
   <div id="toast"></div>
 
   <script src="js/config.js"></script>
   <script src="js/exercise-library.js?v=7"></script>
-  <script src="js/data.js?v=14"></script>
-  <script src="js/app.js?v=14"></script>
-  <script src="js/features.js?v=14"></script>
+  <script src="js/data.js?v=15"></script>
+  <script src="js/app.js?v=15"></script>
+  <script src="js/features.js?v=15"></script>
   <script src="js/sync.js"></script>
 </body>
 </html>

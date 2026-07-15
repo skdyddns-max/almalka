@@ -793,3 +793,110 @@ function renderRoutine(r) {
     ${r.note ? `<p class="aic-tip">💡 ${esc(r.note)}</p>` : ''}
     <p class="hint">참고용이에요. 몸 상태·경험에 맞게 조절하세요.</p>`;
 }
+
+/* ========== 건강: BMI · 혈당 ========== */
+function bmiInfo(bmi) {
+  if (bmi < 18.5) return { cat: '저체중', color: '#6BA8FF' };
+  if (bmi < 23) return { cat: '정상', color: '#5BE0B0' };
+  if (bmi < 25) return { cat: '과체중', color: '#F6A94A' };
+  if (bmi < 30) return { cat: '비만', color: '#FF7A59' };
+  return { cat: '고도비만', color: '#FF5470' };
+}
+function bmiCard(latest) {
+  const h = parseFloat(state.profile.height) || 0;
+  const w = latest && latest.weight ? +latest.weight : 0;
+  if (!h) {
+    return `<div class="bmi-setup">
+      <div><b>BMI 계산하기</b><small>키를 넣으면 최근 체중으로 자동 계산돼요</small></div>
+      <div class="bmi-hin"><input id="bmi-h" type="number" inputmode="decimal" placeholder="키(cm)"><button id="bmi-save" class="pill-btn">저장</button></div>
+    </div>`;
+  }
+  if (!w) {
+    return `<div class="bmi-setup"><div><b>BMI</b><small>＋인바디에서 체중을 넣으면 계산돼요 · 키 ${h}cm</small></div><button id="bmi-edit" class="pill-btn ghost">키 수정</button></div>`;
+  }
+  const bmi = w / Math.pow(h / 100, 2);
+  const info = bmiInfo(bmi);
+  const pct = clamp((bmi - 15) / (35 - 15), 0, 1) * 100;
+  return `<div class="bmi-card">
+    <div class="bmi-top">
+      <div class="bmi-main"><span class="bmi-label">BMI</span><b class="bmi-val" style="color:${info.color}">${bmi.toFixed(1)}</b><span class="bmi-cat" style="background:${info.color}22;color:${info.color}">${info.cat}</span></div>
+      <button id="bmi-edit" class="pill-btn ghost">키 ${h}cm</button>
+    </div>
+    <div class="bmi-bar"><span class="bmi-marker" style="left:${pct}%"></span></div>
+    <div class="bmi-scale"><span>18.5</span><span>23</span><span>25</span><span>30</span></div>
+  </div>`;
+}
+function bindBmi(el) {
+  el.querySelector('#bmi-save')?.addEventListener('click', () => {
+    const v = parseFloat(el.querySelector('#bmi-h').value);
+    if (v >= 100 && v <= 250) { state.profile.height = v; saveState(); renderBody(); }
+    else toast('키를 cm 단위로 입력해주세요 (예: 172)');
+  });
+  el.querySelector('#bmi-edit')?.addEventListener('click', () => {
+    const cur = state.profile.height || '';
+    const v = prompt('키(cm)를 입력하세요', cur);
+    if (v === null) return;
+    const n = parseFloat(v);
+    if (n >= 100 && n <= 250) { state.profile.height = n; saveState(); renderBody(); }
+    else if (v !== '') toast('키를 cm 단위로 입력해주세요');
+  });
+}
+
+const GLU_TAGS = [{ id: 'fasting', label: '공복' }, { id: 'after', label: '식후 2시간' }, { id: 'bed', label: '취침 전' }, { id: 'random', label: '수시' }];
+function gluTagLabel(id) { return (GLU_TAGS.find(t => t.id === id) || {}).label || ''; }
+function glucoseStatus(v, tag) {
+  if (tag === 'fasting') {
+    if (v < 100) return { label: '정상', color: '#5BE0B0' };
+    if (v < 126) return { label: '공복혈당장애', color: '#F6A94A' };
+    return { label: '당뇨 의심', color: '#FF5470' };
+  }
+  if (v < 140) return { label: '정상', color: '#5BE0B0' };
+  if (v < 200) return { label: '주의', color: '#F6A94A' };
+  return { label: '높음', color: '#FF5470' };
+}
+function glucoseSection() {
+  const list = [...(state.glucose || [])].sort((a, b) => (a.dt || '').localeCompare(b.dt || ''));
+  const head = `<div class="sec-title-row"><h3 class="sec-title" style="margin:0">혈당 🩸</h3><button id="glu-add" class="pill-btn">＋ 혈당</button></div>`;
+  const latest = list[list.length - 1];
+  if (!latest) return head + `<p class="hint"><b>＋ 혈당</b>으로 측정값(mg/dL)을 기록하면, 공복·식후 기준으로 정상·주의·높음을 표시해줘요.</p>`;
+  const st = glucoseStatus(+latest.value, latest.tag);
+  const rows = [...list].reverse().slice(0, 7).map(g => {
+    const s = glucoseStatus(+g.value, g.tag);
+    return `<div class="glu-row"><div class="glu-rl"><b>${g.value}<small>mg/dL</small></b><span>${gluTagLabel(g.tag)} · ${(g.dt || '').replace('T', ' ').slice(5, 16)}</span></div>
+      <span class="glu-badge" style="color:${s.color};border-color:${s.color}55">${s.label}</span>
+      <button class="glu-del" data-glu-del="${g.id}" aria-label="삭제">✕</button></div>`;
+  }).join('');
+  return head + `
+    <div class="glu-latest">
+      <div class="glu-big" style="color:${st.color}">${latest.value}<small>mg/dL</small></div>
+      <div class="glu-meta"><span class="glu-badge" style="color:${st.color};border-color:${st.color}55">${st.label}</span><small>${gluTagLabel(latest.tag)} · 최근 측정</small></div>
+    </div>
+    <div class="glu-list">${rows}</div>
+    <p class="hint">참고용이에요. 진단·치료는 반드시 의료진과 상의하세요.</p>`;
+}
+function bindGlucose(el) {
+  el.querySelector('#glu-add')?.addEventListener('click', () => openGlucoseEntry());
+  el.querySelectorAll('[data-glu-del]').forEach(b => b.addEventListener('click', () => {
+    state.glucose = (state.glucose || []).filter(x => x.id !== b.dataset.gluDel); saveState(); renderBody();
+  }));
+}
+function openGlucoseEntry() {
+  const m = document.querySelector('#glucose-entry');
+  const now = new Date();
+  const dt = `${todayStr(now)}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  m.querySelector('#glu-body').innerHTML = `
+    <label>혈당 (mg/dL)<input id="glu-val" type="number" inputmode="numeric" placeholder="예: 95"></label>
+    <label>측정 시점<select id="glu-tag">${GLU_TAGS.map(t => `<option value="${t.id}">${t.label}</option>`).join('')}</select></label>
+    <label>날짜·시간<input id="glu-dt" type="datetime-local" value="${dt}"></label>
+    <label>메모(선택)<input id="glu-note" maxlength="40" placeholder="컨디션·식사 등"></label>
+    <p class="hint" style="margin:2px 0 4px">공복 정상 &lt;100, 식후 2시간 정상 &lt;140 mg/dL</p>
+    <button id="glu-save" class="big-btn">저장</button>`;
+  m.querySelector('#glu-save').addEventListener('click', () => {
+    const v = parseInt(m.querySelector('#glu-val').value);
+    if (!v) { alert('혈당 값을 입력해주세요'); return; }
+    if (!state.glucose) state.glucose = [];
+    state.glucose.push({ id: uid(), value: v, tag: m.querySelector('#glu-tag').value, dt: m.querySelector('#glu-dt').value || dt, note: m.querySelector('#glu-note').value.trim() });
+    saveState(); closeModal('#glucose-entry'); renderBody(); toast('혈당을 기록했어요 🩸');
+  });
+  openModal('#glucose-entry');
+}

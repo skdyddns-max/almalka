@@ -30,6 +30,7 @@ function render() {
   else if (curTab === 'routines') renderRoutines();
   else if (curTab === 'history') renderHistory();
   else if (curTab === 'stats') renderStats();
+  else if (curTab === 'body') renderBody();
   else if (curTab === 'challenge') renderChallenge();
   else if (curTab === 'settings') renderSettings();
 }
@@ -896,11 +897,12 @@ function drawProgress() {
 
 /* ===== 몸(바디) 탭 ===== */
 const BODY_FIELDS = [
-  { k: 'weight', label: '체중', suf: 'kg' },
-  { k: 'chest', label: '가슴', suf: 'cm' },
-  { k: 'waist', label: '허리', suf: 'cm' },
-  { k: 'arm', label: '팔', suf: 'cm' },
-  { k: 'thigh', label: '허벅지', suf: 'cm' },
+  { k: 'weight', label: '체중', suf: 'kg', dec: 1 },
+  { k: 'muscle', label: '골격근량', suf: 'kg', dec: 1 },
+  { k: 'bodyFat', label: '체지방률', suf: '%', dec: 1 },
+  { k: 'bodyWater', label: '체수분', suf: '%', dec: 1 },
+  { k: 'bmr', label: '기초대사량', suf: 'kcal', dec: 0 },
+  { k: 'waist', label: '허리둘레', suf: 'cm', dec: 1 },
 ];
 function renderBody() {
   const el = document.querySelector('#panel-body');
@@ -913,24 +915,32 @@ function renderBody() {
     let diff = '';
     if (v != null && pv != null && v !== '' && pv !== '') {
       const d = Math.round((v - pv) * 10) / 10;
-      if (d) diff = `<i class="bd-diff ${d < 0 ? 'down' : 'up'}">${d > 0 ? '▲' : '▼'}${Math.abs(d)}</i>`;
+      // 체지방률·허리는 감소가 좋음(초록), 골격근·체수분은 증가가 좋음
+      const goodDown = f.k === 'bodyFat' || f.k === 'waist';
+      const cls = d < 0 ? (goodDown ? 'good' : 'bad') : (goodDown ? 'bad' : 'good');
+      if (d) diff = `<i class="bd-diff ${cls}">${d > 0 ? '▲' : '▼'}${Math.abs(d)}</i>`;
     }
-    const num = v != null && v !== '' ? `<b data-count="${v}" data-dec="1" data-suf="${f.suf}">0</b>` : '<b>–</b>';
+    const num = v != null && v !== '' ? `<b data-count="${v}" data-dec="${f.dec}" data-suf="${f.suf}">0</b>` : '<b>–</b>';
     return `<div class="bd-card"><span>${f.label}</span>${num}${diff}</div>`;
   }).join('');
   el.innerHTML = `
-    <header class="tab-head"><div class="th-left"><span class="kicker">Body</span><h2>몸</h2></div>
-      <button id="btn-body-add" class="pill-btn">＋ 기록</button></header>
+    <header class="tab-head"><div class="th-left"><span class="kicker">Health</span><h2>건강</h2></div>
+      <button id="btn-body-add" class="pill-btn">＋ 인바디</button></header>
+    ${typeof bmiCard === 'function' ? bmiCard(latest) : ''}
+    <h3 class="sec-title">체성분 <small>(최근 측정)</small></h3>
     <div class="bd-grid">${cards}</div>
     ${logs.length >= 2 ? `<h3 class="sec-title">체중 추세</h3><div id="body-chart"></div>` : ''}
-    <h3 class="sec-title">기록</h3>
+    ${typeof glucoseSection === 'function' ? glucoseSection() : ''}
+    <h3 class="sec-title">인바디 기록</h3>
     ${logs.length ? `<div class="bd-list">${[...logs].reverse().map(bodyRow).join('')}</div>`
-      : '<p class="hint">오른쪽 위 <b>＋ 기록</b>으로 체중·신체 치수를 남겨보세요. 사진 없이 숫자만으로도 변화가 보여요.</p>'}`;
+      : '<p class="hint">오른쪽 위 <b>＋ 인바디</b>로 체중·체지방·골격근·체수분을 남겨보세요. 인바디 결과지 숫자를 그대로 입력하면 돼요.</p>'}`;
   el.querySelector('#btn-body-add').addEventListener('click', () => openBodyEntry());
   el.querySelectorAll('[data-body-del]').forEach(b => b.addEventListener('click', () => {
     if (!confirm('이 기록을 삭제할까요?')) return;
     state.body = state.body.filter(x => x.id !== b.dataset.bodyDel); saveState(); renderBody();
   }));
+  if (typeof bindBmi === 'function') bindBmi(el);
+  if (typeof bindGlucose === 'function') bindGlucose(el);
   if (logs.length >= 2) drawBodyChart(logs);
   animateCounts(el);
 }
@@ -957,7 +967,7 @@ function openBodyEntry() {
     // 같은 날짜 있으면 교체
     state.body = state.body.filter(x => x.date !== date);
     state.body.push(rec); saveState();
-    closeModal('#bodyentry'); renderBody(); toast('몸 기록 저장 완료!');
+    closeModal('#bodyentry'); renderBody(); toast('인바디 기록 저장 완료!');
   });
   openModal('#bodyentry');
 }
