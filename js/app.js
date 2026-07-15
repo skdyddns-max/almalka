@@ -37,6 +37,7 @@ function render() {
 /* ===== 홈 / 진행 중 세션 ===== */
 function renderHome() {
   const el = document.querySelector('#panel-home');
+  if (typeof checkBadgeUnlocks === 'function') checkBadgeUnlocks();
   if (active) { el.innerHTML = renderActive(); bindActive(el); flashSet = null; return; }
 
   // 세션 없음: 시작 화면
@@ -727,6 +728,7 @@ function renderStats() {
       <div class="mini-stat"><b data-count="${streak}">0</b><span>연속일</span></div>
       <div class="mini-stat"><b data-count="${wk}">0</b><span>이번주 볼륨</span></div>
     </div>
+    ${typeof streakCard === 'function' ? streakCard() : ''}
     <h3 class="sec-title">피로도 · 디로딩</h3>
     ${typeof deloadCard === 'function' ? deloadCard() : ''}
     <h3 class="sec-title">한눈에 보는 숫자</h3>
@@ -746,10 +748,12 @@ function renderStats() {
       <h3 class="sec-title">운동별 성장</h3>
       <select id="stat-ex" class="stat-select">${exWithData.map(e => `<option value="${e.id}" ${e.id === statExId ? 'selected' : ''}>${esc(e.name)}</option>`).join('')}</select>
       <div id="prog-chart"></div>` : '<p class="hint">근력운동을 기록하면 성장 그래프가 여기 나타나요.</p>'}
+    ${typeof badgesSection === 'function' ? badgesSection() : ''}
   `;
   const sel = el.querySelector('#stat-ex');
   if (sel) { sel.addEventListener('change', () => { statExId = sel.value; drawProgress(); }); drawProgress(); }
   animateCounts(el); animateFills(el);
+  if (typeof bindBadges === 'function') bindBadges(el);
   el.querySelector('#st-orm')?.addEventListener('click', () => open1RM());
   el.querySelector('#st-hist')?.addEventListener('click', () => switchTab('history'));
   el.querySelector('#st-share')?.addEventListener('click', () => shareWeekCard());
@@ -1178,6 +1182,12 @@ function groupSection(joined, ms) {
       <div class="fam-join"><input id="ch-code" maxlength="6" placeholder="참여 코드 6자리" autocapitalize="characters" autocomplete="off"><button id="ch-join" class="pill-btn ghost">참여</button></div>`;
   }
   const rows = challengeBoard(ms);
+  const mvp = (rows.length > 1 && rows[0] && rows[0].score > 0) ? rows[0] : null;
+  const mvpBanner = mvp ? `<div class="mvp-banner">
+    <span class="mvp-crown">👑</span>
+    <div class="mvp-txt"><small>이번 주 MVP</small><b>${esc(mvp.nick || '익명')}</b></div>
+    <span class="mvp-stat">💪${mvp.exDays}일${mvp.photoCnt ? ` · 📷${mvp.photoCnt}` : ''}</span>
+  </div>` : '';
   const seg = `<div class="ch-seg">
     <button class="${chView === 'board' ? 'on' : ''}" data-view="board">🏆 리더보드</button>
     <button class="${chView === 'sheet' ? 'on' : ''}" data-view="sheet">📋 출석부</button></div>`;
@@ -1186,6 +1196,7 @@ function groupSection(joined, ms) {
     : `<p class="lb-legend">순위 = 운동일 + <b>📷사진(1일당 +1점)</b> · 📷 탭하면 사진 보기</p>
        <div class="lb-list">${rows.map(lbRow).join('')}</div>`;
   return `<h3 class="sec-title">우리 그룹 <small>코드 ${state.challenge.code} · ${rows.length}명</small></h3>
+    ${mvpBanner}
     ${seg}
     ${body}
     <div class="rt-btns" style="margin-top:14px"><button id="ch-refresh" class="pill-btn ghost">새로고침</button><button id="ch-leave" class="text-btn danger" style="width:auto;padding:8px 14px">나가기</button></div>`;
@@ -1240,8 +1251,8 @@ function lbRow(r) {
   const meta = [r.region, r.gender].filter(Boolean).join(' · ');
   const dots = r.days.map(d => `<i class="${d.exSecs || d.exPhoto ? 'on' : ''}"></i>`).join('');
   const cam = r.photoCnt ? `📷${r.photoCnt} · ` : '';
-  return `<div class="lb-row ${r.isMe ? 'me' : ''} ${r.photoCnt ? 'haspic' : ''}" ${r.photoCnt ? `data-photo="${r.lastPhoto}"` : ''}>
-    <span class="lb-rank ${r.rank <= 3 ? 'top' : ''}">${r.rank}</span>
+  return `<div class="lb-row ${r.isMe ? 'me' : ''} ${r.photoCnt ? 'haspic' : ''} ${r.rank === 1 && r.score > 0 ? 'mvp' : ''}" ${r.photoCnt ? `data-photo="${r.lastPhoto}"` : ''}>
+    <span class="lb-rank ${r.rank <= 3 ? 'top' : ''}">${r.rank === 1 && r.score > 0 ? '👑' : r.rank}</span>
     <div class="lb-info"><b>${esc(r.nick || '익명')}</b><small>💪${r.exDays}${meta ? ` · ${esc(meta)}` : ''}</small></div>
     <div class="lb-week">${dots}</div>
     <div class="lb-stat"><b>${r.certDays}일</b><small>${cam}${fmtHM(r.total) || '0:00'}</small></div>

@@ -658,3 +658,39 @@ input, select { font-family: inherit; }
 .af-sec.improve { border-left: 3px solid #F6A94A; }
 .af-sec.cues { border-left: 3px solid var(--blue); }
 .af-safety { font-size: 13px; color: var(--accent2); font-weight: 700; margin-top: 8px; }
+
+/* ============ 게이미피케이션: 업적 · 스트릭 · MVP ============ */
+/* 스트릭 카드 */
+.streak-card { display: flex; gap: 14px; align-items: center; background: linear-gradient(135deg, rgba(255,122,89,.14), rgba(255,122,89,.05)); border: 1px solid var(--accent-soft); border-radius: var(--r-lg); padding: 15px 17px; box-shadow: var(--sh-1); margin: 4px 0 8px; }
+.streak-flame { font-size: 40px; filter: grayscale(1) opacity(.5); }
+.streak-flame.lit { filter: none; animation: flamePulse 1.6s ease-in-out infinite; }
+@keyframes flamePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+.streak-body { flex: 1; min-width: 0; }
+.streak-body b { font-size: 17px; }
+.streak-body small { display: block; color: var(--muted); font-size: 12px; margin: 1px 0 8px; }
+.streak-track { height: 8px; background: var(--card2); border-radius: 99px; overflow: hidden; }
+.streak-fill { height: 100%; background: var(--grad); border-radius: 99px; transition: width .8s cubic-bezier(.2,.8,.3,1); }
+.streak-next { display: block; font-size: 12px; color: var(--muted); margin-top: 6px; }
+.streak-next b { color: var(--accent); }
+
+/* 업적 그리드 */
+.badge-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+.badge { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 6px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.badge-ic { font-size: 26px; filter: grayscale(1) opacity(.4); }
+.badge b { font-size: 11.5px; font-weight: 700; line-height: 1.25; color: var(--muted); }
+.badge small { font-size: 9.5px; color: var(--faint); font-weight: 700; }
+.badge.on { background: linear-gradient(160deg, rgba(91,224,176,.14), var(--card)); border-color: rgba(91,224,176,.35); }
+.badge.on .badge-ic { filter: none; }
+.badge.on b { color: var(--text); }
+.badge.on small { color: var(--mint); }
+@media (max-width: 380px) { .badge-grid { grid-template-columns: repeat(3, 1fr); } }
+
+/* 그룹 주간 MVP */
+.mvp-banner { display: flex; align-items: center; gap: 12px; background: linear-gradient(135deg, rgba(246,178,26,.16), rgba(246,178,26,.04)); border: 1px solid rgba(246,178,26,.35); border-radius: var(--r-lg); padding: 12px 16px; margin: 6px 0 12px; }
+.mvp-crown { font-size: 26px; }
+.mvp-txt { flex: 1; min-width: 0; }
+.mvp-txt small { display: block; color: var(--gold, #F6B21A); font-size: 11px; font-weight: 800; letter-spacing: .02em; }
+.mvp-txt b { font-size: 17px; }
+.mvp-stat { font-size: 12px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+.lb-row.mvp { border-color: rgba(246,178,26,.4); background: linear-gradient(90deg, rgba(246,178,26,.10), transparent 60%); }
+.lb-row.mvp .lb-rank.top { background: transparent; font-size: 20px; }

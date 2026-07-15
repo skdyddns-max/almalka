@@ -117,6 +117,7 @@ function emptyState() {
     diet: {},              // 식단: {'YYYY-MM-DD': [{id,meal,name,kcal,carb,protein,fat,photo}]}
     dietGoal: { kcal: 2000, carb: 250, protein: 130, fat: 60 },  // 하루 목표
     fatigue: {},           // 피로도: {'YYYY-MM-DD': 1~5} (디로딩 판단용)
+    earnedBadges: [],      // 획득한 업적 id (신규 획득 축하용)
     onboarded: false,      // 첫 사용 온보딩 완료 여부
     settings: { restDefault: 90, weeklyGoal: 3 },
     // account: {code, lastSync}    // 개인 기기 동기화 (sync.js)

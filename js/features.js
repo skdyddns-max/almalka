@@ -618,3 +618,96 @@ function sharePRCard(exId) {
   watermark(x, W, H);
   finishShareCard(cv, `${BRAND.en || 'pr'}-PR-${e.id}.png`, '개인 기록');
 }
+
+/* ========== 게이미피케이션: 업적 · 스트릭 ========== */
+/* 최장 연속일 (역대) */
+function longestStreak() {
+  const dates = [...new Set((state.sessions || []).map(s => s.date))].sort();
+  if (!dates.length) return 0;
+  let best = 1, cur = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const prev = new Date(dates[i - 1]); prev.setDate(prev.getDate() + 1);
+    if (todayStr(prev) === dates[i]) cur++; else cur = 1;
+    if (cur > best) best = cur;
+  }
+  return best;
+}
+/* 업적 판정용 통계 */
+function badgeStats() {
+  let maxW = 0;
+  allExercises().forEach(e => { if (e.type === 'wr') { const p = exercisePR(e.id); if (p.bestW > maxW) maxW = p.bestW; } });
+  const anyPR = allExercises().some(e => e.type === 'wr' && exercisePR(e.id).best1RM > 0);
+  const dietDays = Object.keys(state.diet || {}).filter(k => (state.diet[k] || []).length).length;
+  return {
+    workouts: (state.sessions || []).length, streak: calcStreak(), bestStreak: longestStreak(),
+    maxW, anyPR, vol: lifetimeVolume(), dietDays,
+    joined: !!(state.challenge && state.challenge.code),
+    goalHit: weekCount() >= (state.settings.weeklyGoal || 3),
+  };
+}
+const BADGES = [
+  { id: 'first', emoji: '🎯', name: '첫 걸음', desc: '첫 운동을 기록했어요', test: s => s.workouts >= 1, prog: s => [Math.min(s.workouts, 1), 1] },
+  { id: 'w10', emoji: '🔟', name: '10회 달성', desc: '운동을 10회 기록', test: s => s.workouts >= 10, prog: s => [Math.min(s.workouts, 10), 10] },
+  { id: 'w50', emoji: '🏋️', name: '헬스 마니아', desc: '운동을 50회 기록', test: s => s.workouts >= 50, prog: s => [Math.min(s.workouts, 50), 50] },
+  { id: 'w100', emoji: '💯', name: '백전노장', desc: '운동을 100회 기록', test: s => s.workouts >= 100, prog: s => [Math.min(s.workouts, 100), 100] },
+  { id: 's3', emoji: '🔥', name: '삼일의 벽', desc: '3일 연속 운동', test: s => s.bestStreak >= 3, prog: s => [Math.min(s.bestStreak, 3), 3] },
+  { id: 's7', emoji: '🔥', name: '일주일 개근', desc: '7일 연속 운동', test: s => s.bestStreak >= 7, prog: s => [Math.min(s.bestStreak, 7), 7] },
+  { id: 's14', emoji: '⚡', name: '2주 전사', desc: '14일 연속 운동', test: s => s.bestStreak >= 14, prog: s => [Math.min(s.bestStreak, 14), 14] },
+  { id: 's30', emoji: '👑', name: '한 달 철인', desc: '30일 연속 운동', test: s => s.bestStreak >= 30, prog: s => [Math.min(s.bestStreak, 30), 30] },
+  { id: 'pr1', emoji: '🥇', name: '첫 기록', desc: '첫 개인기록(PR) 달성', test: s => s.anyPR },
+  { id: 'club100', emoji: '🏆', name: '100kg 클럽', desc: '한 종목 최고무게 100kg+', test: s => s.maxW >= 100, prog: s => [Math.min(Math.round(s.maxW), 100), 100] },
+  { id: 'vol10', emoji: '📦', name: '10톤 클럽', desc: '누적 볼륨 10,000kg', test: s => s.vol >= 10000, prog: s => [Math.min(Math.round(s.vol), 10000), 10000] },
+  { id: 'vol50', emoji: '🚂', name: '50톤 클럽', desc: '누적 볼륨 50,000kg', test: s => s.vol >= 50000, prog: s => [Math.min(Math.round(s.vol), 50000), 50000] },
+  { id: 'diet1', emoji: '🍱', name: '식단 시작', desc: '식단을 처음 기록', test: s => s.dietDays >= 1 },
+  { id: 'diet7', emoji: '🥗', name: '식단 일주일', desc: '7일 식단 기록', test: s => s.dietDays >= 7, prog: s => [Math.min(s.dietDays, 7), 7] },
+  { id: 'goal', emoji: '✅', name: '목표 달성', desc: '이번 주 목표 달성', test: s => s.goalHit },
+  { id: 'join', emoji: '🤝', name: '함께해요', desc: '그룹 챌린지 참여', test: s => s.joined },
+];
+function badgesSection() {
+  const s = badgeStats();
+  const list = BADGES.map(b => ({ ...b, earned: b.test(s) }));
+  const n = list.filter(b => b.earned).length;
+  return `<div class="sec-title-row"><h3 class="sec-title" style="margin:0">업적 🏅 <small style="color:var(--muted)">${n}/${list.length}</small></h3></div>
+    <div class="badge-grid">${list.map(b => {
+      const pr = b.prog ? b.prog(s) : null;
+      return `<button class="badge ${b.earned ? 'on' : ''}" data-badge="${b.id}">
+        <span class="badge-ic">${b.emoji}</span>
+        <b>${b.name}</b>
+        <small>${b.earned ? '달성 ✓' : (pr ? `${pr[0]}/${pr[1]}` : '미달성')}</small>
+      </button>`;
+    }).join('')}</div>`;
+}
+function streakCard() {
+  const cur = calcStreak(), best = longestStreak();
+  const M = [3, 7, 14, 30];
+  const next = M.find(m => m > cur) || null;
+  const prevM = M.filter(m => m <= cur).pop() || 0;
+  const pct = next ? Math.round((cur - prevM) / (next - prevM) * 100) : 100;
+  return `<div class="streak-card">
+    <div class="streak-flame ${cur > 0 ? 'lit' : ''}">🔥</div>
+    <div class="streak-body">
+      <b>${cur}일 연속 운동${cur === 0 ? ' · 오늘 시작해요!' : ''}</b>
+      <small>역대 최고 ${best}일</small>
+      <div class="streak-track"><div class="streak-fill" style="width:${pct}%"></div></div>
+      <span class="streak-next">${next ? `다음 뱃지까지 <b>${next - cur}일</b> 🎯` : '최고 등급 달성! 👑'}</span>
+    </div></div>`;
+}
+function bindBadges(el) {
+  el.querySelectorAll('[data-badge]').forEach(b => b.addEventListener('click', () => {
+    const bd = BADGES.find(x => x.id === b.dataset.badge); if (!bd) return;
+    const earned = bd.test(badgeStats());
+    toast(`${bd.emoji} ${bd.name} — ${bd.desc}${earned ? ' ✅' : ' (미달성)'}`);
+  }));
+}
+/* 신규 업적 획득 시 축하 (렌더 시 호출) */
+function checkBadgeUnlocks() {
+  const s = badgeStats();
+  const now = BADGES.filter(b => b.test(s)).map(b => b.id);
+  const prev = state.earnedBadges || [];
+  const fresh = now.filter(id => !prev.includes(id));
+  if (fresh.length || now.length !== prev.length) { state.earnedBadges = now; saveState(); }
+  if (fresh.length && prev.length !== undefined) {
+    const b = BADGES.find(x => x.id === fresh[fresh.length - 1]);
+    if (b && typeof toast === 'function') setTimeout(() => toast(`🎉 새 업적 달성! ${b.emoji} ${b.name}`), 600);
+  }
+}
