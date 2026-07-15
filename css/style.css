@@ -565,6 +565,7 @@ input, select { font-family: inherit; }
 .tool-btn:active { background: var(--card2); }
 
 /* ---- 식단 ---- */
+.sec-title-row { display: flex; align-items: center; justify-content: space-between; margin: 22px 0 8px; }
 .diet-head-actions { display: flex; gap: 7px; }
 .diet-head-actions .pill-btn { padding-left: 11px; padding-right: 11px; white-space: nowrap; }
 .diet-datenav { display: flex; align-items: center; justify-content: space-between; margin: 6px 0 14px; }

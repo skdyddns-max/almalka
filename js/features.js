@@ -508,3 +508,113 @@ function aiErrMsg(err) {
   if (c.includes('ai-4')) return 'AI 요청이 거부됐어요(키·권한 확인). 직접 입력해 주세요.';
   return 'AI 분석에 실패했어요. 직접 입력해 주세요.';
 }
+
+/* ========== 공유 카드 (canvas 이미지) ========== */
+/* 공통: 다크 배경 카드 캔버스 생성 */
+function makeShareCanvas(W, H) {
+  const dpr = 2;
+  const cv = document.createElement('canvas'); cv.width = W * dpr; cv.height = H * dpr;
+  const x = cv.getContext('2d'); x.scale(dpr, dpr);
+  const rr = (a, b, c, d, r) => { x.beginPath(); if (x.roundRect) x.roundRect(a, b, c, d, r); else x.rect(a, b, c, d); };
+  const DISP = w => `${w}px "Do Hyeon", Pretendard, sans-serif`;
+  rr(0, 0, W, H, 22); x.fillStyle = '#1E2330'; x.fill();
+  x.lineWidth = 1; x.strokeStyle = 'rgba(255,255,255,0.08)'; rr(0.5, 0.5, W - 1, H - 1, 22); x.stroke();
+  x.textBaseline = 'alphabetic';
+  return { cv, x, rr, DISP, W, H };
+}
+function watermark(x, W, H) {
+  x.textAlign = 'right'; x.fillStyle = '#5E6675'; x.font = '700 12px Pretendard, sans-serif';
+  x.fillText('💪 ' + BRAND.name, W - 34, H - 20); x.textAlign = 'left';
+}
+function finishShareCard(cv, filename, title) {
+  cv.toBlob(async blob => {
+    if (!blob) { alert('이미지 생성에 실패했어요.'); return; }
+    const file = new File([blob], filename, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title }); return; } catch {}
+    }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+    toast('이미지를 저장했어요!');
+  }, 'image/png');
+}
+
+/* 이번 주(월~일) 식단 평균 칼로리 — 기록된 날 기준 */
+function weekDietAvg() {
+  const ws = weekStart(new Date());
+  let sum = 0, days = 0;
+  for (let i = 0; i < 7; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); const t = dietTotals(todayStr(d)); if (t.kcal > 0) { sum += t.kcal; days++; } }
+  return days ? Math.round(sum / days) : 0;
+}
+
+/* 2) 주간 종합 카드 */
+function shareWeekCard() {
+  const nick = state.profile.nick || '나';
+  const goal = state.settings.weeklyGoal || 3;
+  const avg = weekDietAvg();
+  const { cv, x, rr, DISP, W, H } = makeShareCanvas(640, 452);
+
+  x.fillStyle = '#FF7A59'; x.font = '700 14px Pretendard, sans-serif'; x.fillText('주간 리포트', 34, 54);
+  x.fillStyle = '#fff'; x.font = DISP(34); x.fillText('이번 주 요약', 34, 94);
+  x.fillStyle = '#9AA3B2'; x.font = '600 14px Pretendard, sans-serif'; x.fillText(`${nick} · 이번 주`, 34, 120);
+
+  const cells = [
+    ['운동', `${weekCount()}/${goal}회`, '🏋️'],
+    ['볼륨', `${fmt(weekVolume())}${unit()}`, '💪'],
+    ['연속', `${calcStreak()}일`, '🔥'],
+    ['평균 칼로리', avg ? `${avg}` : '–', '🍱'],
+  ];
+  const gap = 12, cw = (W - 68 - gap) / 2, ch = 122, gy = 150;
+  cells.forEach((c, i) => {
+    const col = i % 2, row = (i / 2) | 0;
+    const cx = 34 + col * (cw + gap), cy = gy + row * (ch + gap);
+    rr(cx, cy, cw, ch, 16); x.fillStyle = '#2A303E'; x.fill();
+    x.textAlign = 'center';
+    x.fillStyle = '#9AA3B2'; x.font = '600 15px Pretendard, sans-serif'; x.fillText(`${c[2]} ${c[0]}`, cx + cw / 2, cy + 38);
+    x.fillStyle = '#fff'; x.font = DISP(36); x.fillText(c[1], cx + cw / 2, cy + 88);
+    x.textAlign = 'left';
+  });
+
+  watermark(x, W, H);
+  finishShareCard(cv, `${BRAND.en || 'week'}-주간-${todayStr()}.png`, '이번 주 요약');
+}
+
+/* 3) 개인기록(PR) 카드 — exId 없으면 최고 1RM 종목 */
+function sharePRCard(exId) {
+  const list = allExercises().filter(e => e.type === 'wr')
+    .map(e => ({ e, pr: exercisePR(e.id) })).filter(o => o.pr.best1RM > 0)
+    .sort((a, b) => b.pr.best1RM - a.pr.best1RM);
+  if (!list.length) { toast('아직 기록된 PR이 없어요'); return; }
+  const item = exId ? list.find(o => o.e.id === exId) : list[0];
+  if (!item) { toast('기록을 찾을 수 없어요'); return; }
+  const { e, pr } = item, u = unit(), nick = state.profile.nick || '나';
+  const { cv, x, rr, DISP, W, H } = makeShareCanvas(640, 404);
+
+  x.fillStyle = '#FF7A59'; x.font = '700 14px Pretendard, sans-serif'; x.fillText('개인 기록 (PR) 🏆', 34, 54);
+  x.fillStyle = '#fff'; x.font = DISP(38); x.fillText(e.name, 34, 102);
+  x.fillStyle = '#9AA3B2'; x.font = '600 14px Pretendard, sans-serif'; x.fillText(`${nick} · ${todayStr()}`, 34, 130);
+
+  // 1RM 대형 (숫자+단위 가운데 정렬)
+  x.textAlign = 'center'; x.fillStyle = '#9AA3B2'; x.font = '700 15px Pretendard, sans-serif';
+  x.fillText('추정 1RM', W / 2, 186); x.textAlign = 'left';
+  const numStr = String(pr.best1RM);
+  x.font = DISP(80); const nw = x.measureText(numStr).width;
+  x.font = DISP(30); const uw = x.measureText(u).width;
+  const startX = (W - (nw + 10 + uw)) / 2;
+  x.fillStyle = '#5BE0B0'; x.font = DISP(80); x.fillText(numStr, startX, 262);
+  x.fillStyle = '#9AA3B2'; x.font = DISP(30); x.fillText(u, startX + nw + 10, 262);
+
+  // 서브 셀
+  const cells = [['최고 무게', `${pr.bestW}${u}`], ['최고 반복', `${pr.bestReps}회`]];
+  const gap = 12, cw = (W - 68 - gap) / 2, cy = 300, ch = 68;
+  cells.forEach((c, i) => {
+    const cx = 34 + i * (cw + gap);
+    rr(cx, cy, cw, ch, 13); x.fillStyle = '#2A303E'; x.fill();
+    x.textAlign = 'center';
+    x.fillStyle = '#9AA3B2'; x.font = '600 12px Pretendard, sans-serif'; x.fillText(c[0], cx + cw / 2, cy + 26);
+    x.fillStyle = '#fff'; x.font = DISP(25); x.fillText(c[1], cx + cw / 2, cy + 55);
+    x.textAlign = 'left';
+  });
+
+  watermark(x, W, H);
+  finishShareCard(cv, `${BRAND.en || 'pr'}-PR-${e.id}.png`, '개인 기록');
+}

@@ -721,7 +721,7 @@ function renderStats() {
   const lwk = lastWeekVolume();
   el.innerHTML = `
     <header class="tab-head"><div class="th-left"><span class="kicker">Stats</span><h2>통계</h2></div>
-      <div class="th-tools"><button id="st-orm" class="pill-btn ghost">🧮 1RM</button><button id="st-hist" class="pill-btn ghost">📅 기록</button></div></header>
+      <div class="th-tools"><button id="st-share" class="pill-btn">📷 주간</button><button id="st-orm" class="pill-btn ghost">🧮 1RM</button><button id="st-hist" class="pill-btn ghost">📅 기록</button></div></header>
     <div class="stat-row">
       <div class="mini-stat"><b data-count="${total}">0</b><span>총 운동</span></div>
       <div class="mini-stat"><b data-count="${streak}">0</b><span>연속일</span></div>
@@ -752,6 +752,8 @@ function renderStats() {
   animateCounts(el); animateFills(el);
   el.querySelector('#st-orm')?.addEventListener('click', () => open1RM());
   el.querySelector('#st-hist')?.addEventListener('click', () => switchTab('history'));
+  el.querySelector('#st-share')?.addEventListener('click', () => shareWeekCard());
+  el.querySelector('#pr-share')?.addEventListener('click', () => sharePRCard());
   el.querySelectorAll('[data-fat]').forEach(b => b.addEventListener('click', () => logFatigue(+b.dataset.fat)));
   el.querySelectorAll('[data-pr-ex]').forEach(b => b.addEventListener('click', () => openExHistory(b.dataset.prEx)));
   el.querySelectorAll('[data-goal]').forEach(b => b.addEventListener('click', () => {
@@ -812,7 +814,7 @@ function prListHTML() {
     .slice(0, 8);
   if (!rows.length) return '';
   const u = unit();
-  return `<h3 class="sec-title">개인 기록 (PR) 🏆</h3><div class="pr-list">${
+  return `<div class="sec-title-row"><h3 class="sec-title" style="margin:0">개인 기록 (PR) 🏆</h3><button id="pr-share" class="pill-btn" style="padding:6px 12px">📷 PR 카드</button></div><div class="pr-list">${
     rows.map(({ e, pr }) => `<button class="pr-item" data-pr-ex="${e.id}">
       <span class="pr-part">${PART_MAP[e.part].emoji}</span>
       <b>${esc(e.name)}</b>
