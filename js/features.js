@@ -871,6 +871,7 @@ function glucoseSection() {
       <div class="glu-big" style="color:${st.color}">${latest.value}<small>mg/dL</small></div>
       <div class="glu-meta"><span class="glu-badge" style="color:${st.color};border-color:${st.color}55">${st.label}</span><small>${gluTagLabel(latest.tag)} · 최근 측정</small></div>
     </div>
+    ${list.length >= 2 ? '<div id="glu-chart" class="glu-chart"></div>' : ''}
     <div class="glu-list">${rows}</div>
     <p class="hint">참고용이에요. 진단·치료는 반드시 의료진과 상의하세요.</p>`;
 }
@@ -879,6 +880,32 @@ function bindGlucose(el) {
   el.querySelectorAll('[data-glu-del]').forEach(b => b.addEventListener('click', () => {
     state.glucose = (state.glucose || []).filter(x => x.id !== b.dataset.gluDel); saveState(); renderBody();
   }));
+  const list = [...(state.glucose || [])].sort((a, b) => (a.dt || '').localeCompare(b.dt || ''));
+  if (list.length >= 2) drawGlucoseChart(list);
+}
+/* 혈당 추세 그래프 (최근 12회, 시점별 색상 점 + 공복/식후 기준선) */
+function drawGlucoseChart(list) {
+  const box = document.querySelector('#glu-chart'); if (!box) return;
+  const pts = list.slice(-12);
+  if (pts.length < 2) { box.innerHTML = ''; return; }
+  const W = 320, H = 148, padL = 30, padR = 12, padT = 12, padB = 22;
+  const vals = pts.map(p => +p.value);
+  let maxV = Math.max(...vals, 145), minV = Math.min(...vals, 85);
+  maxV = Math.ceil((maxV + 8) / 10) * 10; minV = Math.max(0, Math.floor((minV - 8) / 10) * 10);
+  const x = i => padL + (pts.length === 1 ? 0 : i / (pts.length - 1) * (W - padL - padR));
+  const y = v => H - padB - ((v - minV) / (maxV - minV || 1)) * (H - padT - padB);
+  const ref = (v, label, color) => (v > minV && v < maxV)
+    ? `<line x1="${padL}" y1="${y(v).toFixed(1)}" x2="${W - padR}" y2="${y(v).toFixed(1)}" stroke="${color}" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>`
+    + `<text x="${W - padR}" y="${(y(v) - 3).toFixed(1)}" text-anchor="end" font-size="9" fill="${color}">${label}</text>` : '';
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(+p.value).toFixed(1)}`).join(' ');
+  const dots = pts.map((p, i) => { const s = glucoseStatus(+p.value, p.tag); return `<circle cx="${x(i).toFixed(1)}" cy="${y(+p.value).toFixed(1)}" r="3.5" fill="${s.color}"/>`; }).join('');
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="prog-svg">
+    <text x="4" y="${(y(maxV) + 4).toFixed(1)}" font-size="9" fill="var(--faint)">${maxV}</text>
+    <text x="4" y="${(y(minV) + 4).toFixed(1)}" font-size="9" fill="var(--faint)">${minV}</text>
+    ${ref(100, '공복 100', '#F6A94A')}${ref(140, '식후 140', '#FF7A59')}
+    <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2"/>${dots}
+  </svg>
+  <p class="chart-x">${(pts[0].dt || '').slice(5, 10)} → ${(pts[pts.length - 1].dt || '').slice(5, 10)} · ${pts.length}회 · 점 색 = 상태</p>`;
 }
 function openGlucoseEntry() {
   const m = document.querySelector('#glucose-entry');

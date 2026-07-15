@@ -771,3 +771,5 @@ input, select { font-family: inherit; }
 .glu-rl b small { font-size: 11px; color: var(--muted); font-weight: 600; margin-left: 2px; }
 .glu-rl span { display: block; color: var(--muted); font-size: 12px; }
 .glu-del { background: transparent; color: var(--faint); font-size: 14px; padding: 4px 6px; flex: 0 0 auto; }
+
+.glu-chart { margin: 12px 0 6px; }
